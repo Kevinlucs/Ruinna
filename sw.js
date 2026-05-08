@@ -1,9 +1,10 @@
-const CACHE_NAME = 'planebsb-v1';
+const CACHE_NAME = 'planebsb-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './ai-coach.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
