@@ -1,154 +1,43 @@
-# 🏃‍♂️ PLANE BSB
+# 🏃‍♂️ PLAN RUN (antigo PLANE BSB)
 
-<p align="center">
-  <img src="image.png" alt="PLANE BSB - Mapa da prova" width="300">
-</p>
+O **PLAN RUN** é um Progressive Web App (PWA) avançado, criado para organizar, gerar e acompanhar planos de treino de corrida. Utilizando Inteligência Artificial (Google Gemini), o aplicativo gera planilhas de treinamento totalmente personalizadas para diferentes níveis de atletas e distâncias, desde os 5km até a Ultramaratona.
 
-> Mini projeto de gestão de treinos para acompanhar meu progresso até a data do meu objetivo: uma ultra maratona de **61km em Brasília**.
+## ✨ Novidades e Principais Funcionalidades
 
-## 📋 Sobre o Projeto
+- **🧠 IA Coach Integrado:** Geração de planilhas de treinamento do zero usando a API do Google Gemini. A IA analisa idade, peso, nível de experiência, dias disponíveis e resultados do Teste de 3km para prescrever paces, volumes e estratégias precisas.
+- **🍎 Nutrição Inteligente:** Prescrição dinâmica de hidratação e suplementação (Pré, Intra e Pós-treino) humanizada e adaptada ao tipo e distância de cada treino.
+- **🔐 Sistema de Login e Segurança:** Proteção de acesso com múltiplos usuários. A chave da API do Gemini e as senhas ficam ocultas em um arquivo local (`config.js`), não exposto no repositório.
+- **📊 Estatísticas e Acompanhamento:** Contagem regressiva precisa para o dia da prova (corrigindo bugs de fuso horário), barra de progresso de quilometragem e controle de treinos realizados (streak).
+- **✏️ Customização:** Capacidade de editar treinos, alterar descrições e paces manualmente.
+- **📱 PWA Responsivo:** Tema escuro inspirado no Strava, otimizado para celular, podendo ser instalado na tela inicial e funcionando offline.
 
-O **PLANE BSB** é um Progressive Web App (PWA) simples e funcional, criado para organizar e acompanhar meu plano de treino de corrida ao longo de **24 semanas**, dividido em 3 fases:
+## 🚀 Como Executar Localmente
 
-| Fase | Semanas | Foco |
-|------|---------|------|
-| 🏗️ **Base** | S1 a S8 | Construção de volume e resistência aeróbica |
-| 💪 **Resistência** | S9 a S16 | Longões crescentes e trabalho de pace de prova |
-| ⚡ **Pico** | S17 a S24 | Simulados, polimento e preparação final |
+Como o sistema conta com integração de IA, é necessário configurar sua própria chave de API.
 
-### Funcionalidades
-
-- 📅 **Próximo treino**: ao abrir o app, mostra automaticamente o próximo treino com base na data atual
-- ✅ **Marcar treinos concluídos**: controle de quais treinos já foram realizados
-- 📏 **Soma automática de km**: totaliza a distância percorrida até o dia da prova
-- ✏️ **Edição de pace e descrição**: personalize cada treino com suas anotações
-- 🏁 **Countdown**: contagem regressiva para o dia da prova
-- 📊 **Estatísticas**: progresso por fase, treinos concluídos, sequência de semanas
-- 📱 **Instalável como app**: funciona offline no celular via PWA
-
-## 🛠️ Stacks Utilizadas
-
-| Tecnologia | Uso |
-|------------|-----|
-| **HTML5** | Estrutura e semântica do app |
-| **CSS3** | Estilização com design mobile-first, paleta inspirada no Strava (preto + laranja) |
-| **JavaScript (Vanilla)** | Toda a lógica do app, sem frameworks |
-| **PWA (Service Worker)** | Cache offline e instalação como app nativo |
-| **Web App Manifest** | Configuração de ícone, nome e modo standalone |
-| **LocalStorage** | Persistência dos treinos concluídos e personalizações |
-| **GitHub Pages** | Hospedagem gratuita e estática |
-| **Google Fonts (Outfit)** | Tipografia moderna |
-
-> **Zero dependências externas.** Nenhum framework, nenhum bundler, nenhum `node_modules`. Apenas HTML, CSS e JS puro.
-
-## 🚀 Como Usar
-
-### Acessar Online
-Acesse diretamente pelo navegador: **[kevinlucs.github.io/planeBsb](https://kevinlucs.github.io/planeBsb/)**
-
-### Instalar no Celular (Android)
-1. Abra o link acima no **Chrome**
-2. Toque nos **⋮** (menu) → **"Instalar app"**
-3. O app será adicionado à sua tela inicial com ícone próprio
-
-### Rodar Localmente
+1. Clone o repositório:
 ```bash
 git clone https://github.com/Kevinlucs/planeBsb.git
 cd planeBsb
-python3 -m http.server 8080
-# Acesse http://localhost:8080
 ```
 
-## 🔧 Como Adaptar para Seus Treinos
+2. Configure suas credenciais:
+- Copie o arquivo de exemplo: `cp config.js.example config.js`
+- Edite o `config.js` e insira sua **API Key do Google Gemini** e configure as senhas dos usuários desejados.
 
-Quer usar este app para o **seu próprio plano de treino**? É simples:
-
-### 1. Faça um fork do repositório
-
-### 2. Edite o arquivo `app.js`
-
-Localize o array `WEEKS_DATA` (logo no início do arquivo) e altere os treinos conforme sua planilha:
-
-```javascript
-const WEEKS_DATA = [
-  {
-    week: 'S1',          // Número da semana
-    phase: 'Base',       // Fase: 'Base', 'Resistência' ou 'Pico'
-    off: false,          // true = semana de recuperação
-    ter: {               // Treino de Terça (Qualidade)
-      title: '8km Forte/Pace',
-      desc: '1km forte / 1km pace 6:30',
-      km: 8,
-      pace: '6:30/km alternado'
-    },
-    qui: {               // Treino de Quinta (Base)
-      title: '6km Leve',
-      desc: 'Corrida leve e contínua',
-      km: 6,
-      pace: '6:30-7:00/km'
-    },
-    sab: {               // Treino de Sábado (Longão)
-      title: '15km Progressivo',
-      desc: 'Longão progressivo',
-      km: 15,
-      pace: 'Progressivo'
-    }
-  },
-  // ... continue para cada semana
-];
+3. Execute um servidor local na pasta do projeto:
+```bash
+npx serve .
+# ou
+python -m http.server 8000
 ```
 
-### 3. Ajuste as datas
+4. Acesse no navegador em `http://localhost:3000` ou `http://localhost:8000`.
 
-No topo do `app.js`, altere a data de início e da prova:
+## 🛠️ Tecnologias Utilizadas
+- **Frontend:** Vanilla JavaScript, HTML5, CSS3.
+- **Armazenamento:** `localStorage` (persistência completa de treinos e planos sem necessidade de banco de dados externo).
+- **Inteligência Artificial:** Google Gemini API (`gemini-2.5-flash`).
 
-```javascript
-const RACE_DATE = new Date(2026, 9, 17);  // Mês é 0-indexed (9 = Outubro)
-const START_DATE = new Date(2026, 4, 5);  // 5 de Maio de 2026
-```
-
-### 4. Personalize o visual
-
-No `styles.css`, as cores estão nas variáveis CSS no `:root`:
-
-```css
-:root {
-  --accent: #FC4C02;        /* Cor principal (laranja Strava) */
-  --accent-light: #FF6B2B;  /* Cor de destaque */
-  --bg: #000000;            /* Fundo */
-  --bg-card: #1a1a1a;       /* Fundo dos cards */
-}
-```
-
-### 5. Troque o ícone
-
-Substitua os arquivos `icon-192.png` e `icon-512.png` pelo ícone do seu evento/prova.
-
-### 6. Deploy
-
-Ative o **GitHub Pages** em Settings → Pages → Branch: `main` → Save. Pronto!
-
-## 📁 Estrutura do Projeto
-
-```
-planeBsb/
-├── index.html        # Página principal do app
-├── styles.css        # Estilização completa
-├── app.js            # Lógica, dados dos treinos e navegação
-├── sw.js             # Service Worker para cache offline
-├── manifest.json     # Configuração PWA (nome, ícones, cores)
-├── icon-192.png      # Ícone 192x192
-├── icon-512.png      # Ícone 512x512
-├── image.png         # Imagem original do mapa da prova
-└── README.md         # Este arquivo
-```
-
-## 📄 Licença
-
-Este projeto é livre para uso e adaptação. Use como base para organizar seus próprios treinos! 🏃‍♂️
-
----
-
-<p align="center">
-  Feito com 🧡 para a comunidade de corrida de Brasília
-</p>
+## 🔜 Próximos Passos
+- Transformar o sistema PWA em um aplicativo mobile nativo (Android/iOS) para publicação na Play Store e App Store.

@@ -1,6 +1,6 @@
 {
-  "name": "PLANE BSB",
-  "short_name": "PLANE BSB",
+  "name": "PLAN RUN",
+  "short_name": "PLAN RUN",
   "description": "Controle de treinos para corrida - Plano de treino inteligente",
   "start_url": "./index.html",
   "scope": "./",
