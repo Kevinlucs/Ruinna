@@ -1,13 +1,13 @@
-const CACHE_NAME = 'planrun-v3';
+const CACHE_NAME = 'planrun-v4';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
-  './ai-coach.js',
-  './config.js',
+  './assets/css/styles.css',
+  './assets/js/app.js',
+  './assets/js/ai-coach.js',
+  './config/config.js',
   './manifest.json',
-  './logo.jpeg',
+  './assets/img/logo.jpeg',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap'
 ];
 
