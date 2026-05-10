@@ -4,32 +4,40 @@ const MODELS = [
 ];
 
 async function fetchWithRetry(url, options, retries = 3) {
+  let lastResponse;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const response = await fetch(url, options);
+      lastResponse = response;
 
       if (response.ok) {
         return response;
       }
 
-      if (
-        response.status === 429 ||
-        response.status === 500 ||
-        response.status === 503
-      ) {
+      // Erros de cota ou servidor temporário
+      if (response.status === 429 || response.status >= 500) {
         const waitTime = 2000 * (attempt + 1);
-        console.warn(`Retry em ${waitTime}ms`);
+        console.warn(`Retry ${attempt + 1}/${retries} em ${waitTime}ms para status ${response.status}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
 
+      // Outros erros (400, 403, etc) - não tenta de novo pois são definitivos
       const errorText = await response.text();
-      throw new Error(errorText);
+      throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+
     } catch (error) {
       if (attempt === retries - 1) throw error;
+      console.warn(`Fetch attempt ${attempt + 1} failed: ${error.message}`);
       await new Promise(resolve => setTimeout(resolve, 1500));
     }
   }
+  
+  if (lastResponse) {
+    const text = await lastResponse.text();
+    throw new Error(`Todos os retries falharam. Último status: ${lastResponse.status}. Resposta: ${text}`);
+  }
+  throw new Error('Todos os retries falharam sem resposta do servidor.');
 }
 
 async function tryModels(prompt, apiKey) {
@@ -37,7 +45,7 @@ async function tryModels(prompt, apiKey) {
 
   for (const model of MODELS) {
     try {
-      console.log(`Tentando: ${model}`);
+      console.log(`Tentando modelo: ${model}`);
       const response = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
@@ -50,8 +58,6 @@ async function tryModels(prompt, apiKey) {
               topP: 0.95,
               topK: 40,
               maxOutputTokens: 8192
-              // Removido responseMimeType para compatibilidade com modelos mais antigos se necessário,
-              // o parsePlanResponse no frontend já trata as cercas do markdown.
             }
           })
         },
@@ -59,20 +65,34 @@ async function tryModels(prompt, apiKey) {
       );
 
       const data = await response.json();
-      if (!data.candidates?.length) {
-        throw new Error('Gemini retornou vazio');
+      
+      // Validação profunda da resposta
+      if (!data.candidates || data.candidates.length === 0) {
+        console.error(`Modelo ${model} retornou sem candidatos:`, JSON.stringify(data));
+        throw new Error(`Modelo ${model} não retornou nenhuma resposta válida (candidatos vazios).`);
       }
 
-      return {
-        model,
-        text: data.candidates[0].content.parts[0].text
-      };
+      const content = data.candidates[0].content;
+      if (!content || !content.parts || content.parts.length === 0) {
+        console.error(`Modelo ${model} retornou conteúdo vazio:`, JSON.stringify(data));
+        throw new Error(`Modelo ${model} retornou conteúdo vazio ou bloqueado.`);
+      }
+
+      const text = content.parts[0].text;
+      if (!text) {
+        throw new Error(`Modelo ${model} retornou texto vazio.`);
+      }
+
+      return { model, text };
+
     } catch (error) {
-      console.error(`Erro no ${model}:`, error.message);
+      console.error(`Falha no modelo ${model}:`, error.message);
       lastError = error;
+      // Continua para o próximo modelo
     }
   }
-  throw lastError;
+
+  throw lastError || new Error('Nenhum modelo disponível conseguiu processar a requisição.');
 }
 
 export default async function handler(req, res) {
@@ -88,7 +108,11 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY não configurada' });
+      console.error('ERRO: GEMINI_API_KEY não encontrada nas variáveis de ambiente da Vercel.');
+      return res.status(500).json({ 
+        error: 'Configuração incompleta', 
+        details: 'A chave da API (GEMINI_API_KEY) não foi configurada no painel da Vercel.' 
+      });
     }
 
     const result = await tryModels(prompt, apiKey);
@@ -100,11 +124,11 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('SERVER ERROR DETAIL:', error);
+    console.error('ERRO NO SERVIDOR:', error);
     return res.status(500).json({
       error: 'Erro ao gerar resposta com Gemini',
       details: error.message,
-      stack: error.stack // Ajuda a ver onde quebrou exatamente
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
