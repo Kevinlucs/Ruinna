@@ -100,10 +100,11 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('SERVER ERROR DETAIL:', error);
     return res.status(500).json({
       error: 'Erro ao gerar resposta com Gemini',
-      details: error.message
+      details: error.message,
+      stack: error.stack // Ajuda a ver onde quebrou exatamente
     });
   }
 }
