@@ -667,9 +667,11 @@ function setExportBackupStatus(message) {
   if (el) el.textContent = message;
 }
 
-function csvValue(value) {
+function csvValue(value, delimiter = ';') {
   const text = String(value ?? '');
-  return `"${text.replace(/"/g, '""')}"`;
+  const mustQuote = text.includes(delimiter) || text.includes('"') || text.includes('\n') || text.includes('\r');
+  const escaped = text.replace(/"/g, '""');
+  return mustQuote ? `"${escaped}"` : escaped;
 }
 
 function getExportPlanName() {
@@ -677,22 +679,135 @@ function getExportPlanName() {
   return plan?.planName || plan?.raceName || 'planrun';
 }
 
+function formatExportDate(value) {
+  if (!value) return '';
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleDateString('pt-BR');
+}
+
+function getPlanWeeksForExport() {
+  const plan = typeof AICoach !== 'undefined' ? AICoach.loadPlan() : null;
+
+  if (plan?.weeks?.length) return plan.weeks;
+
+  const weekMap = new Map();
+
+  allWorkouts.forEach(w => {
+    if (!weekMap.has(w.week)) {
+      weekMap.set(w.week, {
+        week: w.week,
+        weekIndex: w.weekIndex,
+        phase: w.phase,
+        workouts: [],
+        totalKm: 0
+      });
+    }
+
+    const week = weekMap.get(w.week);
+    week.workouts.push(w);
+    week.totalKm += Number(w.km || 0);
+  });
+
+  return [...weekMap.values()].sort((a, b) => (a.weekIndex ?? 0) - (b.weekIndex ?? 0));
+}
+
+function getExportSummary() {
+  const plan = typeof AICoach !== 'undefined' ? AICoach.loadPlan() : null;
+  const workouts = allWorkouts || [];
+  const weeks = getPlanWeeksForExport();
+
+  const plannedKm = workouts.reduce((sum, w) => sum + Number(w.km || 0), 0);
+  const completedKm = workouts.reduce((sum, w) => sum + Number(getWorkoutCompletedKm(w) || 0), 0);
+  const completedCount = workouts.filter(w => getWorkoutStatus(w.id) === 'completed').length;
+  const partialCount = workouts.filter(w => getWorkoutStatus(w.id) === 'partial').length;
+  const skippedCount = workouts.filter(w => getWorkoutStatus(w.id) === 'skipped').length;
+  const resolvedCount = workouts.filter(w => isWorkoutResolved(w.id)).length;
+  const biggestLongRun = workouts.reduce((max, w) => {
+    const type = String(w.dayType || '').toLowerCase();
+    const title = String(w.title || '').toLowerCase();
+
+    if (type.includes('long') || title.includes('long')) {
+      return Math.max(max, Number(w.km || 0));
+    }
+
+    return max;
+  }, 0);
+
+  const weeklyTotals = weeks.map(week => {
+    const weekWorkouts = week.workouts?.length
+      ? week.workouts
+      : workouts.filter(w => w.week === week.week);
+
+    return weekWorkouts.reduce((sum, w) => sum + Number(w.km || 0), 0);
+  });
+
+  const peakWeeklyKm = weeklyTotals.length ? Math.max(...weeklyTotals) : 0;
+  const adherence = workouts.length ? Math.round((resolvedCount / workouts.length) * 100) : 0;
+
+  return {
+    plan,
+    planName: plan?.planName || getExportPlanName(),
+    raceName: plan?.raceName || 'Prova',
+    raceDistance: plan?.raceDistance || '',
+    startDate: plan?.startDate || START_DATE,
+    raceDate: plan?.raceDate || RACE_DATE,
+    totalWeeks: plan?.totalWeeks || weeks.length,
+    daysPerWeek: plan?.daysPerWeek || '',
+    generatedAt: plan?.generatedAt || '',
+    exportedAt: new Date().toISOString(),
+    plannedKm,
+    completedKm,
+    completedCount,
+    partialCount,
+    skippedCount,
+    resolvedCount,
+    totalWorkouts: workouts.length,
+    adherence,
+    peakWeeklyKm,
+    biggestLongRun,
+    checkins: Object.keys(weeklyCheckins || {}).length,
+    adjustments: Array.isArray(adjustmentHistory) ? adjustmentHistory.length : 0
+  };
+}
+
 function buildCSVFromWorkouts() {
-  const header = [
-    'Semana',
-    'Fase',
-    'Data',
-    'Dia',
-    'Tipo',
-    'Treino',
-    'Descricao',
-    'Km planejado',
-    'Pace planejado',
-    'Status',
-    'Km realizado',
-    'Pace realizado',
-    'Esforco',
-    'Observacoes'
+  const delimiter = ';';
+  const summary = getExportSummary();
+
+  const lines = [
+    'sep=;',
+    ['PLANRUN - PLANILHA DE TREINOS'].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Plano', summary.planName].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Prova', summary.raceName].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Distância alvo', summary.raceDistance].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Período', `${formatExportDate(summary.startDate)} até ${formatExportDate(summary.raceDate)}`].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Semanas', summary.totalWeeks].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Treinos/semana', summary.daysPerWeek].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Km planejado', summary.plannedKm.toFixed(1).replace('.', ',')].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Km realizado', summary.completedKm.toFixed(1).replace('.', ',')].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Aderência registrada', `${summary.adherence}%`].map(v => csvValue(v, delimiter)).join(delimiter),
+    ['Exportado em', new Date(summary.exportedAt).toLocaleString('pt-BR')].map(v => csvValue(v, delimiter)).join(delimiter),
+    '',
+    [
+      'Semana',
+      'Fase',
+      'Data',
+      'Dia',
+      'Tipo',
+      'Treino',
+      'Descrição',
+      'Km planejado',
+      'Pace planejado',
+      'Status',
+      'Km realizado',
+      'Pace realizado',
+      'Esforço',
+      'Observações'
+    ].map(v => csvValue(v, delimiter)).join(delimiter)
   ];
 
   const rows = allWorkouts.map(w => {
@@ -702,22 +817,22 @@ function buildCSVFromWorkouts() {
     return [
       w.week,
       w.phase,
-      w.dateStr,
+      formatExportDate(w.date || w.dateStr),
       w.day,
       w.dayType,
       w.title,
       getDesc(w),
-      w.km,
+      Number(w.km || 0).toFixed(1).replace('.', ','),
       getPace(w),
       getWorkoutStatusLabel(status),
-      status === 'completed' || status === 'partial' ? getWorkoutCompletedKm(w) : 0,
+      status === 'completed' || status === 'partial' ? Number(getWorkoutCompletedKm(w) || 0).toFixed(1).replace('.', ',') : '0,0',
       feedback.completedPace || '',
       feedback.effort || '',
       feedback.notes || ''
-    ].map(csvValue).join(',');
+    ].map(v => csvValue(v, delimiter)).join(delimiter);
   });
 
-  return [header.map(csvValue).join(','), ...rows].join('\n');
+  return [...lines, ...rows].join('\n');
 }
 
 function handleExportCSV() {
@@ -728,10 +843,177 @@ function handleExportCSV() {
 
   const planName = sanitizeFileName(getExportPlanName());
   const csv = '\ufeff' + buildCSVFromWorkouts();
-  const filename = `${planName}-treinos-${getTodayFileStamp()}.csv`;
+  const filename = `${planName}-relatorio-${getTodayFileStamp()}.csv`;
 
   downloadBlob(csv, filename, 'text/csv;charset=utf-8');
-  setExportBackupStatus(`CSV exportado: ${filename}`);
+  setExportBackupStatus(`CSV organizado exportado: ${filename}`);
+}
+
+function excelCell(value) {
+  return escapeHTML(value ?? '');
+}
+
+function excelKm(value) {
+  const number = Number(value || 0);
+  return number.toFixed(1).replace('.', ',');
+}
+
+function statusClass(status) {
+  if (status === 'completed') return 'status-completed';
+  if (status === 'partial') return 'status-partial';
+  if (status === 'skipped') return 'status-skipped';
+  return 'status-pending';
+}
+
+function buildProfessionalExcelHTML() {
+  const summary = getExportSummary();
+  const weeks = getPlanWeeksForExport();
+
+  const weekSummaryRows = weeks.map(week => {
+    const weekWorkouts = week.workouts?.length
+      ? week.workouts
+      : allWorkouts.filter(w => w.week === week.week);
+    const weekPlannedKm = weekWorkouts.reduce((sum, w) => sum + Number(w.km || 0), 0);
+    const weekCompletedKm = weekWorkouts.reduce((sum, w) => sum + Number(getWorkoutCompletedKm(w) || 0), 0);
+    const done = weekWorkouts.filter(w => isWorkoutResolved(w.id)).length;
+    const adherence = weekWorkouts.length ? Math.round((done / weekWorkouts.length) * 100) : 0;
+
+    return `
+      <tr>
+        <td>${excelCell(week.week)}</td>
+        <td>${excelCell(week.phase)}</td>
+        <td class="number">${excelKm(weekPlannedKm)}</td>
+        <td class="number">${excelKm(weekCompletedKm)}</td>
+        <td class="number">${adherence}%</td>
+        <td>${done}/${weekWorkouts.length}</td>
+        <td colspan="8">${excelCell(weeklyCheckins?.[week.week]?.resultMessage || '')}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const workoutRows = allWorkouts.map(w => {
+    const feedback = getWorkoutFeedback(w.id) || {};
+    const status = getWorkoutStatus(w.id);
+
+    return `
+      <tr>
+        <td>${excelCell(w.week)}</td>
+        <td>${excelCell(w.phase)}</td>
+        <td>${excelCell(formatExportDate(w.date || w.dateStr))}</td>
+        <td>${excelCell(w.day)}</td>
+        <td>${excelCell(w.dayType)}</td>
+        <td class="strong">${excelCell(w.title)}</td>
+        <td>${excelCell(getDesc(w))}</td>
+        <td class="number">${excelKm(w.km)}</td>
+        <td>${excelCell(getPace(w))}</td>
+        <td class="${statusClass(status)}">${excelCell(getWorkoutStatusLabel(status))}</td>
+        <td class="number">${status === 'completed' || status === 'partial' ? excelKm(getWorkoutCompletedKm(w)) : '0,0'}</td>
+        <td>${excelCell(feedback.completedPace || '')}</td>
+        <td class="number">${excelCell(feedback.effort || '')}</td>
+        <td>${excelCell(feedback.notes || '')}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="UTF-8">
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>PlanRun</x:Name>
+          <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    body { font-family: Arial, sans-serif; color: #1f2937; }
+    table { border-collapse: collapse; width: 100%; }
+    .cover-title { background: #FC4C02; color: #ffffff; font-size: 22px; font-weight: 800; text-align: center; height: 36px; }
+    .cover-subtitle { background: #111827; color: #ffffff; font-size: 13px; text-align: center; height: 26px; }
+    .section-title { background: #111827; color: #ffffff; font-size: 14px; font-weight: 800; height: 28px; }
+    .kpi-label { background: #f3f4f6; color: #6b7280; font-weight: 700; border: 1px solid #d1d5db; }
+    .kpi-value { background: #ffffff; color: #111827; font-weight: 800; border: 1px solid #d1d5db; }
+    th { background: #FC4C02; color: #ffffff; font-weight: 800; border: 1px solid #c2410c; height: 26px; }
+    td { border: 1px solid #d1d5db; padding: 6px; vertical-align: top; }
+    tr:nth-child(even) td { background: #fff7ed; }
+    .number { text-align: center; mso-number-format:"0.0"; }
+    .strong { font-weight: 700; }
+    .status-completed { background: #dcfce7; color: #166534; font-weight: 800; text-align: center; }
+    .status-partial { background: #fef9c3; color: #854d0e; font-weight: 800; text-align: center; }
+    .status-skipped { background: #fee2e2; color: #991b1b; font-weight: 800; text-align: center; }
+    .status-pending { background: #e5e7eb; color: #374151; font-weight: 800; text-align: center; }
+  </style>
+</head>
+<body>
+  <table>
+    <colgroup>
+      <col style="width: 80px"><col style="width: 110px"><col style="width: 95px"><col style="width: 95px">
+      <col style="width: 120px"><col style="width: 180px"><col style="width: 360px"><col style="width: 90px">
+      <col style="width: 110px"><col style="width: 110px"><col style="width: 95px"><col style="width: 110px">
+      <col style="width: 80px"><col style="width: 280px">
+    </colgroup>
+    <tr><td colspan="14" class="cover-title">PLANRUN — RELATÓRIO PROFISSIONAL DE TREINOS</td></tr>
+    <tr><td colspan="14" class="cover-subtitle">${excelCell(summary.planName)} • Exportado em ${excelCell(new Date(summary.exportedAt).toLocaleString('pt-BR'))}</td></tr>
+    <tr><td colspan="14"></td></tr>
+
+    <tr><td colspan="14" class="section-title">Resumo do plano</td></tr>
+    <tr>
+      <td colspan="2" class="kpi-label">Prova</td><td colspan="2" class="kpi-value">${excelCell(summary.raceName)}</td>
+      <td colspan="2" class="kpi-label">Distância</td><td colspan="2" class="kpi-value">${excelCell(summary.raceDistance)}</td>
+      <td colspan="2" class="kpi-label">Período</td><td colspan="4" class="kpi-value">${excelCell(formatExportDate(summary.startDate))} até ${excelCell(formatExportDate(summary.raceDate))}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="kpi-label">Semanas</td><td colspan="2" class="kpi-value">${excelCell(summary.totalWeeks)}</td>
+      <td colspan="2" class="kpi-label">Treinos</td><td colspan="2" class="kpi-value">${excelCell(summary.totalWorkouts)}</td>
+      <td colspan="2" class="kpi-label">Check-ins</td><td colspan="4" class="kpi-value">${excelCell(summary.checkins)}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="kpi-label">Km planejado</td><td colspan="2" class="kpi-value">${excelKm(summary.plannedKm)} km</td>
+      <td colspan="2" class="kpi-label">Km realizado</td><td colspan="2" class="kpi-value">${excelKm(summary.completedKm)} km</td>
+      <td colspan="2" class="kpi-label">Aderência</td><td colspan="4" class="kpi-value">${excelCell(summary.adherence)}%</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="kpi-label">Volume pico</td><td colspan="2" class="kpi-value">${excelKm(summary.peakWeeklyKm)} km</td>
+      <td colspan="2" class="kpi-label">Maior longão</td><td colspan="2" class="kpi-value">${excelKm(summary.biggestLongRun)} km</td>
+      <td colspan="2" class="kpi-label">Ajustes aplicados</td><td colspan="4" class="kpi-value">${excelCell(summary.adjustments)}</td>
+    </tr>
+    <tr><td colspan="14"></td></tr>
+
+    <tr><td colspan="14" class="section-title">Resumo semanal</td></tr>
+    <tr>
+      <th>Semana</th><th>Fase</th><th>Km planejado</th><th>Km realizado</th><th>Aderência</th><th>Treinos</th><th colspan="8">Observação</th>
+    </tr>
+    ${weekSummaryRows}
+    <tr><td colspan="14"></td></tr>
+
+    <tr><td colspan="14" class="section-title">Planilha detalhada</td></tr>
+    <tr>
+      <th>Semana</th><th>Fase</th><th>Data</th><th>Dia</th><th>Tipo</th><th>Treino</th><th>Descrição</th><th>Km plan.</th><th>Pace plan.</th><th>Status</th><th>Km real.</th><th>Pace real.</th><th>Esforço</th><th>Observações</th>
+    </tr>
+    ${workoutRows}
+  </table>
+</body>
+</html>`;
+}
+
+function handleExportExcel() {
+  if (!allWorkouts.length) {
+    showSimpleModal('⚠️', 'Nenhum treino para exportar', 'Gere ou adote uma planilha antes de exportar em Excel.');
+    return;
+  }
+
+  const planName = sanitizeFileName(getExportPlanName());
+  const filename = `${planName}-relatorio-profissional-${getTodayFileStamp()}.xls`;
+  const html = '\ufeff' + buildProfessionalExcelHTML();
+
+  downloadBlob(html, filename, 'application/vnd.ms-excel;charset=utf-8');
+  setExportBackupStatus(`Excel profissional exportado: ${filename}`);
 }
 
 function buildBackupPayload() {

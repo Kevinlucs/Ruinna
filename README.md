@@ -124,9 +124,10 @@ Também foi aplicado um ajuste responsivo para desktop: as telas agora usam larg
 
 Esta versão adiciona a camada de exportação e backup local:
 
-- Exportação CSV da planilha ativa, incluindo semana, fase, data, tipo, treino, km, pace e status.
+- Exportação Excel profissional (.xls) com capa, resumo do plano, resumo semanal e planilha detalhada estilizada.
+- Exportação CSV organizada com cabeçalho de resumo, separador compatível com Excel e dados completos da planilha ativa.
 - Backup JSON completo com plano, progresso, check-ins, ajustes adaptativos e customizações.
 - Importação de backup JSON para restaurar o plano e o histórico no navegador.
 - Mantém a estratégia sem banco de dados para o MVP fechado com poucos usuários.
 
-Após publicar, limpe o Service Worker/cache do navegador para carregar o `planrun-v12`.
+Após publicar, limpe o Service Worker/cache do navegador para carregar o `planrun-v13`.

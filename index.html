@@ -258,15 +258,20 @@
                         <div>
                             <span class="export-backup-eyebrow">Export & Backup Engine</span>
                             <h3>Guardar e compartilhar plano</h3>
-                            <p>Exporte a planilha em CSV ou salve um backup completo para restaurar depois.</p>
+                            <p>Exporte a planilha em Excel profissional/CSV ou salve um backup completo para restaurar depois.</p>
                         </div>
                         <div class="export-backup-badge">Local</div>
                     </div>
                     <div class="export-backup-grid">
+                        <button type="button" class="export-action-card featured" onclick="handleExportExcel()">
+                            <span>📈</span>
+                            <strong>Excel profissional</strong>
+                            <small>Relatório estilizado com capa, resumo, semanas e treinos.</small>
+                        </button>
                         <button type="button" class="export-action-card" onclick="handleExportCSV()">
                             <span>📊</span>
                             <strong>Exportar CSV</strong>
-                            <small>Planilha com semanas, datas, km, pace e status.</small>
+                            <small>CSV organizado com cabeçalho, resumo e separador compatível.</small>
                         </button>
                         <button type="button" class="export-action-card" onclick="handleExportBackup()">
                             <span>🧳</span>

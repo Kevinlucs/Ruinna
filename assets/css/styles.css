@@ -2868,3 +2868,22 @@ select.ai-input {
     width: max-content;
   }
 }
+
+/* ===== PROFESSIONAL EXPORT BUTTON ===== */
+.export-action-card.featured {
+  background:
+    linear-gradient(135deg, rgba(252, 76, 2, 0.22), rgba(255, 255, 255, 0.06)),
+    rgba(0, 0, 0, 0.24);
+  border-color: rgba(252, 76, 2, 0.52);
+  box-shadow: 0 14px 32px rgba(252, 76, 2, 0.12);
+}
+
+.export-action-card.featured strong {
+  color: #fff;
+}
+
+@media (min-width: 980px) {
+  .export-backup-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
