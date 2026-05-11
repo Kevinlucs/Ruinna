@@ -66,7 +66,7 @@ Plano é salvo no localStorage
 ## 🔜 Próximos Passos
 
 - Criar tela de revisão técnica do plano.
-- Adicionar exportação em CSV/Excel/PDF.
+- Adicionar exportação em PDF/Excel/PDF.
 - Criar check-in semanal para replanejamento adaptativo.
 - Futuramente migrar para Supabase/PostgreSQL quando houver mais usuários e necessidade de sincronização entre dispositivos.
 
@@ -125,9 +125,16 @@ Também foi aplicado um ajuste responsivo para desktop: as telas agora usam larg
 Esta versão adiciona a camada de exportação e backup local:
 
 - Exportação Excel profissional (.xls) com capa, resumo do plano, resumo semanal e planilha detalhada estilizada.
-- Exportação CSV organizada com cabeçalho de resumo, separador compatível com Excel e dados completos da planilha ativa.
+- Exportação PDF organizada com cabeçalho de resumo, separador compatível com Excel e dados completos da planilha ativa.
 - Backup JSON completo com plano, progresso, check-ins, ajustes adaptativos e customizações.
 - Importação de backup JSON para restaurar o plano e o histórico no navegador.
 - Mantém a estratégia sem banco de dados para o MVP fechado com poucos usuários.
 
 Após publicar, limpe o Service Worker/cache do navegador para carregar o `planrun-v13`.
+
+
+## Atualização v14
+
+- Removida a exportação CSV da interface.
+- Mantida a exportação Excel profissional (.xls).
+- Adicionada exportação PDF profissional via janela de impressão do navegador, com layout visual, resumo do plano, KPIs, ajustes recentes e planilha detalhada por semana.

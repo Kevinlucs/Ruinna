@@ -667,13 +667,6 @@ function setExportBackupStatus(message) {
   if (el) el.textContent = message;
 }
 
-function csvValue(value, delimiter = ';') {
-  const text = String(value ?? '');
-  const mustQuote = text.includes(delimiter) || text.includes('"') || text.includes('\n') || text.includes('\r');
-  const escaped = text.replace(/"/g, '""');
-  return mustQuote ? `"${escaped}"` : escaped;
-}
-
 function getExportPlanName() {
   const plan = AICoach.loadPlan();
   return plan?.planName || plan?.raceName || 'planrun';
@@ -772,81 +765,6 @@ function getExportSummary() {
     checkins: Object.keys(weeklyCheckins || {}).length,
     adjustments: Array.isArray(adjustmentHistory) ? adjustmentHistory.length : 0
   };
-}
-
-function buildCSVFromWorkouts() {
-  const delimiter = ';';
-  const summary = getExportSummary();
-
-  const lines = [
-    'sep=;',
-    ['PLANRUN - PLANILHA DE TREINOS'].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Plano', summary.planName].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Prova', summary.raceName].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Distância alvo', summary.raceDistance].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Período', `${formatExportDate(summary.startDate)} até ${formatExportDate(summary.raceDate)}`].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Semanas', summary.totalWeeks].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Treinos/semana', summary.daysPerWeek].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Km planejado', summary.plannedKm.toFixed(1).replace('.', ',')].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Km realizado', summary.completedKm.toFixed(1).replace('.', ',')].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Aderência registrada', `${summary.adherence}%`].map(v => csvValue(v, delimiter)).join(delimiter),
-    ['Exportado em', new Date(summary.exportedAt).toLocaleString('pt-BR')].map(v => csvValue(v, delimiter)).join(delimiter),
-    '',
-    [
-      'Semana',
-      'Fase',
-      'Data',
-      'Dia',
-      'Tipo',
-      'Treino',
-      'Descrição',
-      'Km planejado',
-      'Pace planejado',
-      'Status',
-      'Km realizado',
-      'Pace realizado',
-      'Esforço',
-      'Observações'
-    ].map(v => csvValue(v, delimiter)).join(delimiter)
-  ];
-
-  const rows = allWorkouts.map(w => {
-    const feedback = getWorkoutFeedback(w.id) || {};
-    const status = getWorkoutStatus(w.id);
-
-    return [
-      w.week,
-      w.phase,
-      formatExportDate(w.date || w.dateStr),
-      w.day,
-      w.dayType,
-      w.title,
-      getDesc(w),
-      Number(w.km || 0).toFixed(1).replace('.', ','),
-      getPace(w),
-      getWorkoutStatusLabel(status),
-      status === 'completed' || status === 'partial' ? Number(getWorkoutCompletedKm(w) || 0).toFixed(1).replace('.', ',') : '0,0',
-      feedback.completedPace || '',
-      feedback.effort || '',
-      feedback.notes || ''
-    ].map(v => csvValue(v, delimiter)).join(delimiter);
-  });
-
-  return [...lines, ...rows].join('\n');
-}
-
-function handleExportCSV() {
-  if (!allWorkouts.length) {
-    showSimpleModal('⚠️', 'Nenhum treino para exportar', 'Gere ou adote uma planilha antes de exportar em CSV.');
-    return;
-  }
-
-  const planName = sanitizeFileName(getExportPlanName());
-  const csv = '\ufeff' + buildCSVFromWorkouts();
-  const filename = `${planName}-relatorio-${getTodayFileStamp()}.csv`;
-
-  downloadBlob(csv, filename, 'text/csv;charset=utf-8');
-  setExportBackupStatus(`CSV organizado exportado: ${filename}`);
 }
 
 function excelCell(value) {
@@ -1014,6 +932,197 @@ function handleExportExcel() {
 
   downloadBlob(html, filename, 'application/vnd.ms-excel;charset=utf-8');
   setExportBackupStatus(`Excel profissional exportado: ${filename}`);
+}
+
+
+function pdfCell(value) {
+  return escapeHTML(value ?? '');
+}
+
+function buildProfessionalPDFHTML() {
+  const summary = getExportSummary();
+  const weeks = getPlanWeeksForExport();
+
+  const weekCards = weeks.map(week => {
+    const weekWorkouts = week.workouts?.length
+      ? week.workouts
+      : allWorkouts.filter(w => w.week === week.week);
+
+    const weekPlannedKm = weekWorkouts.reduce((sum, w) => sum + Number(w.km || 0), 0);
+    const weekCompletedKm = weekWorkouts.reduce((sum, w) => sum + Number(getWorkoutCompletedKm(w) || 0), 0);
+    const done = weekWorkouts.filter(w => isWorkoutResolved(w.id)).length;
+    const adherence = weekWorkouts.length ? Math.round((done / weekWorkouts.length) * 100) : 0;
+
+    const workoutRows = weekWorkouts.map(w => {
+      const status = getWorkoutStatus(w.id);
+      const feedback = getWorkoutFeedback(w.id) || {};
+      const completedKm = status === 'completed' || status === 'partial'
+        ? excelKm(getWorkoutCompletedKm(w))
+        : '-';
+
+      return `
+        <tr>
+          <td>${pdfCell(formatExportDate(w.date || w.dateStr))}</td>
+          <td>${pdfCell(w.day)}</td>
+          <td><strong>${pdfCell(w.dayType)}</strong><br><span>${pdfCell(w.title)}</span></td>
+          <td>${pdfCell(getDesc(w))}</td>
+          <td class="num">${excelKm(w.km)} km</td>
+          <td>${pdfCell(getPace(w))}</td>
+          <td><span class="status ${statusClass(status)}">${pdfCell(getWorkoutStatusLabel(status))}</span></td>
+          <td class="num">${completedKm}</td>
+          <td>${pdfCell(feedback.notes || '')}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <section class="week-card">
+        <div class="week-head">
+          <div>
+            <span class="eyebrow">${pdfCell(week.phase || 'Fase')}</span>
+            <h2>${pdfCell(week.week)}</h2>
+          </div>
+          <div class="week-kpis">
+            <span>${excelKm(weekPlannedKm)} km planejados</span>
+            <span>${excelKm(weekCompletedKm)} km realizados</span>
+            <span>${adherence}% aderência</span>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Dia</th>
+              <th>Treino</th>
+              <th>Descrição</th>
+              <th>Km</th>
+              <th>Pace</th>
+              <th>Status</th>
+              <th>Km real</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>${workoutRows}</tbody>
+        </table>
+      </section>
+    `;
+  }).join('');
+
+  const adjustmentRows = Array.isArray(adjustmentHistory) && adjustmentHistory.length
+    ? adjustmentHistory.slice(-8).reverse().map(adj => `
+      <li>
+        <strong>${pdfCell(adj.week || 'Plano')}</strong>
+        <span>${pdfCell(adj.resultMessage || adj.reason || adj.message || 'Ajuste aplicado no plano.')}</span>
+      </li>
+    `).join('')
+    : '<li><strong>Sem ajustes registrados</strong><span>O plano segue sem alterações adaptativas.</span></li>';
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${pdfCell(summary.planName)} - PlanRun</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111827; background: #f3f4f6; }
+    .pdf-page { max-width: 1180px; margin: 0 auto; background: #fff; padding: 28px; }
+    .hero { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: stretch; margin-bottom: 22px; }
+    .hero-main { background: linear-gradient(135deg, #FC4C02, #111827); color: #fff; border-radius: 22px; padding: 26px; }
+    .hero-main .brand { font-size: 13px; letter-spacing: .18em; font-weight: 900; opacity: .85; }
+    .hero-main h1 { margin: 10px 0 8px; font-size: 34px; line-height: 1.05; }
+    .hero-main p { margin: 0; font-size: 14px; opacity: .9; }
+    .hero-side { border: 1px solid #e5e7eb; border-radius: 22px; padding: 20px; background: #fff7ed; }
+    .hero-side strong { display: block; font-size: 13px; color: #6b7280; margin-bottom: 5px; }
+    .hero-side span { display: block; font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 22px; }
+    .kpi { border: 1px solid #e5e7eb; border-radius: 16px; padding: 12px; background: #fff; }
+    .kpi small { display: block; color: #6b7280; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .kpi strong { display: block; margin-top: 6px; font-size: 18px; }
+    .section-title { margin: 22px 0 10px; padding: 10px 14px; border-radius: 12px; background: #111827; color: #fff; font-size: 15px; }
+    .adjustments { margin: 0 0 20px; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .adjustments li { border: 1px solid #fed7aa; background: #fff7ed; border-radius: 14px; padding: 10px 12px; }
+    .adjustments strong { display: block; color: #9a3412; margin-bottom: 4px; }
+    .adjustments span { font-size: 12px; color: #374151; }
+    .week-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 18px; margin: 0 0 16px; overflow: hidden; background: #fff; }
+    .week-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+    .eyebrow { display: block; color: #FC4C02; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .week-head h2 { margin: 2px 0 0; font-size: 22px; }
+    .week-kpis { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .week-kpis span { padding: 7px 10px; border-radius: 999px; background: #111827; color: #fff; font-size: 11px; font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th { background: #FC4C02; color: #fff; text-align: left; font-size: 11px; padding: 8px; }
+    td { border-top: 1px solid #e5e7eb; padding: 8px; font-size: 11px; vertical-align: top; word-wrap: break-word; }
+    td span { color: #6b7280; }
+    .num { text-align: center; font-weight: 800; white-space: nowrap; }
+    .status { display: inline-block; padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 900; color: #111827; }
+    .status-completed { background: #dcfce7; color: #166534; }
+    .status-partial { background: #fef9c3; color: #854d0e; }
+    .status-skipped { background: #fee2e2; color: #991b1b; }
+    .status-pending { background: #e5e7eb; color: #374151; }
+    .footer { margin-top: 22px; color: #6b7280; font-size: 11px; text-align: center; }
+    @media print { body { background: #fff; } .pdf-page { padding: 0; max-width: none; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="pdf-page">
+    <section class="hero">
+      <div class="hero-main">
+        <div class="brand">PLANRUN</div>
+        <h1>${pdfCell(summary.planName)}</h1>
+        <p>Relatório profissional de treinos gerado em ${pdfCell(new Date(summary.exportedAt).toLocaleString('pt-BR'))}</p>
+      </div>
+      <div class="hero-side">
+        <strong>Prova</strong><span>${pdfCell(summary.raceName)}</span>
+        <strong>Distância</strong><span>${pdfCell(summary.raceDistance)}</span>
+        <strong>Período</strong><span>${pdfCell(formatExportDate(summary.startDate))} até ${pdfCell(formatExportDate(summary.raceDate))}</span>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi"><small>Semanas</small><strong>${pdfCell(summary.totalWeeks)}</strong></div>
+      <div class="kpi"><small>Treinos</small><strong>${pdfCell(summary.totalWorkouts)}</strong></div>
+      <div class="kpi"><small>Km planejado</small><strong>${excelKm(summary.plannedKm)}</strong></div>
+      <div class="kpi"><small>Km realizado</small><strong>${excelKm(summary.completedKm)}</strong></div>
+      <div class="kpi"><small>Volume pico</small><strong>${excelKm(summary.peakWeeklyKm)}</strong></div>
+      <div class="kpi"><small>Aderência</small><strong>${pdfCell(summary.adherence)}%</strong></div>
+    </section>
+
+    <h2 class="section-title">Ajustes adaptativos recentes</h2>
+    <ul class="adjustments">${adjustmentRows}</ul>
+
+    <h2 class="section-title">Planilha detalhada</h2>
+    ${weekCards}
+
+    <p class="footer">PlanRun • Relatório gerado localmente pelo navegador. Use Ctrl/Cmd + P para salvar novamente em PDF.</p>
+  </div>
+</body>
+</html>`;
+}
+
+function handleExportPDF() {
+  if (!allWorkouts.length) {
+    showSimpleModal('⚠️', 'Nenhum treino para exportar', 'Gere ou adote uma planilha antes de gerar o PDF.');
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+
+  if (!printWindow) {
+    showSimpleModal('⚠️', 'Pop-up bloqueado', 'Permita pop-ups para o PlanRun e tente gerar o PDF novamente.');
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(buildProfessionalPDFHTML());
+  printWindow.document.close();
+  printWindow.focus();
+
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+
+  setExportBackupStatus('PDF profissional aberto. Use “Salvar como PDF” na janela de impressão.');
 }
 
 function buildBackupPayload() {
