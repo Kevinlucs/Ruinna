@@ -2652,3 +2652,95 @@ select.ai-input {
     width: max-content;
   }
 }
+
+/* ===== STYLE FIX: Adaptive Card spacing + Stats desktop layout ===== */
+.weekly-section {
+  margin-bottom: 28px;
+}
+
+.weekly-workouts {
+  gap: 12px;
+}
+
+.weekly-checkin-card {
+  margin-top: 28px;
+}
+
+/* Deixa o bloco do check-in respirar melhor em telas grandes */
+@media (min-width: 768px) {
+  .weekly-section {
+    margin-bottom: 34px;
+  }
+
+  .weekly-checkin-card {
+    margin-top: 34px !important;
+  }
+}
+
+/* Estatísticas: layout mais equilibrado no desktop, em duas linhas */
+@media (min-width: 768px) {
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .stat-card {
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 18px;
+  }
+
+  .stat-card-accent {
+    grid-column: span 2 !important;
+  }
+
+  .stats-grid .stat-card:nth-child(4),
+  .stats-grid .stat-card:nth-child(5) {
+    grid-column: span 2;
+  }
+
+  .stats-grid .stat-card:nth-child(4),
+  .stats-grid .stat-card:nth-child(5) {
+    min-height: 118px;
+  }
+
+  .stat-card-icon {
+    font-size: 1.65rem;
+    margin-bottom: 6px;
+  }
+
+  .stat-card-value {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .stat-card-accent .stat-card-value {
+    font-size: 2.2rem;
+  }
+}
+
+/* Tablet intermediário: mantém duas linhas sem sobrar card perdido */
+@media (min-width: 520px) and (max-width: 767px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat-card-accent {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Mobile: espaçamento menor, mas sem grudar */
+@media (max-width: 519px) {
+  .weekly-section {
+    margin-bottom: 22px;
+  }
+
+  .weekly-checkin-card {
+    margin-top: 22px;
+  }
+}
