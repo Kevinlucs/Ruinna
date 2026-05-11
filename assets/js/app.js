@@ -685,27 +685,45 @@ function formatExportDate(value) {
 function getPlanWeeksForExport() {
   const plan = typeof AICoach !== 'undefined' ? AICoach.loadPlan() : null;
 
-  if (plan?.weeks?.length) return plan.weeks;
+  // A exportação precisa usar a mesma fonte da tela do app.
+  // O plano salvo em AICoach.loadPlan() contém a estrutura base, mas os status
+  // reais dos treinos ficam em allWorkouts + workoutFeedback/completedWorkouts.
+  // Se usarmos plan.weeks diretamente, os treinos não têm id e saem como Pendentes.
+  if (Array.isArray(allWorkouts) && allWorkouts.length) {
+    const weekMap = new Map();
 
-  const weekMap = new Map();
+    allWorkouts.forEach(w => {
+      const weekKey = w.week || `S${(w.weekIndex ?? 0) + 1}`;
 
-  allWorkouts.forEach(w => {
-    if (!weekMap.has(w.week)) {
-      weekMap.set(w.week, {
-        week: w.week,
-        weekIndex: w.weekIndex,
-        phase: w.phase,
-        workouts: [],
-        totalKm: 0
-      });
-    }
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, {
+          week: weekKey,
+          weekIndex: w.weekIndex ?? weekMap.size,
+          phase: w.phase || 'Base',
+          off: Boolean(w.off),
+          workouts: [],
+          totalKm: 0
+        });
+      }
 
-    const week = weekMap.get(w.week);
-    week.workouts.push(w);
-    week.totalKm += Number(w.km || 0);
-  });
+      const week = weekMap.get(weekKey);
+      week.workouts.push(w);
+      week.totalKm += Number(w.km || 0);
+    });
 
-  return [...weekMap.values()].sort((a, b) => (a.weekIndex ?? 0) - (b.weekIndex ?? 0));
+    return [...weekMap.values()]
+      .sort((a, b) => (a.weekIndex ?? 0) - (b.weekIndex ?? 0))
+      .map(week => ({
+        ...week,
+        workouts: week.workouts.sort((a, b) => {
+          const dateA = new Date(a.date || a.dateStr || 0).getTime();
+          const dateB = new Date(b.date || b.dateStr || 0).getTime();
+          return dateA - dateB;
+        })
+      }));
+  }
+
+  return plan?.weeks?.length ? plan.weeks : [];
 }
 
 function getExportSummary() {
