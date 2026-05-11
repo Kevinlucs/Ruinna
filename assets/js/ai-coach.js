@@ -699,34 +699,377 @@ REGRAS:
     };
   }
 
+  // ===== VALIDATION ENGINE =====
+  const VALID_PHASES = ['Base', 'Resistência', 'Pico', 'Polimento'];
+  const VALID_DAY_TYPES = ['Qualidade', 'Base', 'Longão', 'Recuperação', 'Intervalado'];
+
+  function createValidationReport() {
+    return {
+      status: 'ok',
+      checkedAt: new Date().toISOString(),
+      issues: [],
+      fixed: [],
+      warnings: [],
+      summary: {
+        totalIssues: 0,
+        totalFixes: 0,
+        totalWarnings: 0
+      }
+    };
+  }
+
+  function addValidationIssue(report, severity, code, message, path = '', fixed = false) {
+    const issue = {
+      severity,
+      code,
+      message,
+      path,
+      fixed,
+      at: new Date().toISOString()
+    };
+
+    report.issues.push(issue);
+
+    if (fixed) report.fixed.push(issue);
+    if (severity === 'warning') report.warnings.push(issue);
+
+    report.summary.totalIssues = report.issues.length;
+    report.summary.totalFixes = report.fixed.length;
+    report.summary.totalWarnings = report.warnings.length;
+
+    if (severity === 'error' && !fixed) report.status = 'error';
+    if (severity === 'warning' && report.status === 'ok') report.status = 'warning';
+  }
+
+  function isValidDayName(dayName) {
+    return MONDAY_INDEXED_DAYS.includes(dayName);
+  }
+
+  function normalizePhaseValue(phase, fallbackPhase) {
+    return VALID_PHASES.includes(phase) ? phase : fallbackPhase;
+  }
+
+  function normalizeDayTypeValue(dayType, fallbackDayType = 'Base') {
+    return VALID_DAY_TYPES.includes(dayType) ? dayType : fallbackDayType;
+  }
+
+  function normalizeWorkoutForValidation(workout, fallbackWorkout, report, path) {
+    const source = workout || {};
+    const fallback = fallbackWorkout || {};
+
+    const clean = {
+      dayOfWeek: isValidDayName(source.dayOfWeek) ? source.dayOfWeek : (fallback.dayOfWeek || 'Terça'),
+      dayType: normalizeDayTypeValue(source.dayType, fallback.dayType || 'Base'),
+      title: String(source.title || fallback.title || 'Treino').slice(0, 45),
+      desc: String(source.desc || fallback.desc || '').slice(0, 120),
+      km: roundKm(source.km || fallback.km || 1),
+      pace: source.pace || fallback.pace || '-'
+    };
+
+    if (!isValidDayName(source.dayOfWeek)) {
+      addValidationIssue(report, 'warning', 'WORKOUT_DAY_FIXED', 'Dia do treino ajustado para um dia válido.', `${path}.dayOfWeek`, true);
+    }
+
+    if (!VALID_DAY_TYPES.includes(source.dayType)) {
+      addValidationIssue(report, 'warning', 'WORKOUT_TYPE_FIXED', 'Tipo do treino ajustado para um tipo válido.', `${path}.dayType`, true);
+    }
+
+    if (!source.title) {
+      addValidationIssue(report, 'warning', 'WORKOUT_TITLE_FIXED', 'Título ausente preenchido automaticamente.', `${path}.title`, true);
+    }
+
+    if (!Number.isFinite(Number(source.km)) || Number(source.km) <= 0) {
+      addValidationIssue(report, 'warning', 'WORKOUT_KM_FIXED', 'Distância inválida ajustada automaticamente.', `${path}.km`, true);
+    }
+
+    // Blindagem: o app não deve salvar nutrição/hidratação nesta versão.
+    delete clean.nutrition;
+    delete clean.water;
+    delete clean.pre;
+    delete clean.intra;
+    delete clean.post;
+
+    return clean;
+  }
+
+  function sumWeekKm(week) {
+    return (week.workouts || []).reduce((sum, workout) => sum + Number(workout.km || 0), 0);
+  }
+
+  function scaleWeekDistances(week, targetKm, minimumKmPerWorkout = 1) {
+    const workouts = week.workouts || [];
+    const currentKm = sumWeekKm(week);
+    if (!workouts.length || currentKm <= 0 || !Number.isFinite(targetKm)) return week;
+
+    const factor = targetKm / currentKm;
+    let accumulated = 0;
+
+    workouts.forEach((workout, index) => {
+      const isLast = index === workouts.length - 1;
+      const km = isLast
+        ? Math.max(minimumKmPerWorkout, Math.round(targetKm - accumulated))
+        : Math.max(minimumKmPerWorkout, Math.round(Number(workout.km || 0) * factor));
+
+      workout.km = km;
+      accumulated += km;
+    });
+
+    return week;
+  }
+
+  function alignWorkoutDays(week, weekNumber, userData, report) {
+    const daysPerWeek = clamp(Number(userData.daysPerWeek || 3), 2, 6);
+    const expectedDays = getTrainingDays(daysPerWeek, getStartDayOfWeek(userData), weekNumber === 1);
+
+    week.workouts.forEach((workout, index) => {
+      const expectedDay = expectedDays[index] || expectedDays[expectedDays.length - 1] || 'Sábado';
+
+      if (workout.dayOfWeek !== expectedDay) {
+        addValidationIssue(
+          report,
+          'warning',
+          'WORKOUT_DAY_ALIGNED',
+          `Dia do treino alinhado para ${expectedDay}.`,
+          `weeks[${weekNumber - 1}].workouts[${index}].dayOfWeek`,
+          true
+        );
+
+        workout.dayOfWeek = expectedDay;
+      }
+    });
+
+    return week;
+  }
+
+  function ensureLongRunIsLast(week, weekNumber, totalWeeks, userData, blueprint, report) {
+    const workouts = week.workouts || [];
+    if (!workouts.length) return week;
+
+    const lastIndex = workouts.length - 1;
+    const isRaceWeek = weekNumber === totalWeeks;
+    const lastWorkout = workouts[lastIndex];
+
+    if (isRaceWeek) {
+      const distanceKm = getDistanceKm(userData);
+
+      lastWorkout.dayType = 'Longão';
+      lastWorkout.title = 'Prova alvo';
+      lastWorkout.desc = 'Execute a prova no ritmo planejado.';
+      lastWorkout.km = roundKm(distanceKm);
+      lastWorkout.pace = blueprint?.paceZones?.racePace || 'Ritmo de prova';
+
+      addValidationIssue(report, 'warning', 'RACE_WEEK_ENFORCED', 'Última semana ajustada para terminar com a prova.', `weeks[${weekNumber - 1}]`, true);
+      return week;
+    }
+
+    if (lastWorkout.dayType === 'Longão') return week;
+
+    const longRunIndex = workouts.findIndex(workout => workout.dayType === 'Longão');
+
+    if (longRunIndex >= 0 && longRunIndex !== lastIndex) {
+      const tmp = workouts[lastIndex];
+      workouts[lastIndex] = workouts[longRunIndex];
+      workouts[longRunIndex] = tmp;
+
+      addValidationIssue(report, 'warning', 'LONG_RUN_MOVED', 'Longão movido para o último treino da semana.', `weeks[${weekNumber - 1}].workouts`, true);
+    } else {
+      const generated = generateWorkoutWeek({ weekNumber, totalWeeks, userData, blueprint });
+      const generatedLong = generated.workouts[generated.workouts.length - 1] || {};
+
+      lastWorkout.dayType = 'Longão';
+      lastWorkout.title = generatedLong.title || 'Longão progressivo';
+      lastWorkout.desc = generatedLong.desc || 'Longão em ritmo leve a moderado.';
+      lastWorkout.pace = generatedLong.pace || paceForWorkout('Longão', blueprint);
+      lastWorkout.km = Math.max(lastWorkout.km, generatedLong.km || lastWorkout.km);
+
+      addValidationIssue(report, 'warning', 'LONG_RUN_CREATED', 'Último treino ajustado como longão.', `weeks[${weekNumber - 1}].workouts[${lastIndex}]`, true);
+    }
+
+    return week;
+  }
+
+  function enforceWeeklyProgression(plan, userData, blueprint, report) {
+    const weeks = plan.weeks || [];
+    const totalWeeks = weeks.length;
+    const taperWeeks = blueprint?.strategy?.taperWeeks || 2;
+    const taperStart = Math.max(1, totalWeeks - taperWeeks + 1);
+    const maxGrowth = 1.25;
+
+    for (let index = 1; index < weeks.length; index++) {
+      const currentWeekNumber = index + 1;
+      const previous = weeks[index - 1];
+      const current = weeks[index];
+      const previousKm = sumWeekKm(previous);
+      const currentKm = sumWeekKm(current);
+
+      if (!previousKm || !currentKm) continue;
+
+      const isTaper = currentWeekNumber >= taperStart;
+      const isRecovery = current.off === true;
+      const isRaceWeek = currentWeekNumber === totalWeeks;
+      const previousWasRecovery = previous.off === true;
+
+      if (!isTaper && !isRecovery && !previousWasRecovery && currentKm > Math.round(previousKm * maxGrowth)) {
+        const targetKm = Math.round(previousKm * maxGrowth);
+        scaleWeekDistances(current, targetKm, 1);
+
+        addValidationIssue(
+          report,
+          'warning',
+          'WEEKLY_VOLUME_CAPPED',
+          `Volume semanal limitado para evitar salto agressivo (${currentKm}km → ${targetKm}km).`,
+          `weeks[${index}]`,
+          true
+        );
+      }
+
+      if (isRecovery && currentKm >= previousKm) {
+        const targetKm = Math.max(3, Math.round(previousKm * 0.75));
+        scaleWeekDistances(current, targetKm, 1);
+
+        addValidationIssue(
+          report,
+          'warning',
+          'RECOVERY_WEEK_REDUCED',
+          `Semana de recuperação reduzida (${currentKm}km → ${targetKm}km).`,
+          `weeks[${index}]`,
+          true
+        );
+      }
+
+      if (isTaper && !isRaceWeek && currentKm > previousKm) {
+        const targetKm = Math.max(3, Math.round(previousKm * 0.85));
+        scaleWeekDistances(current, targetKm, 1);
+
+        addValidationIssue(
+          report,
+          'warning',
+          'TAPER_WEEK_REDUCED',
+          `Semana de polimento ajustada para reduzir carga (${currentKm}km → ${targetKm}km).`,
+          `weeks[${index}]`,
+          true
+        );
+      }
+    }
+
+    return plan;
+  }
+
   function validateAndFixPlan(plan, userData) {
     const totalWeeks = calculateWeeks(userData.startDate, userData.raceDate);
     const daysPerWeek = clamp(Number(userData.daysPerWeek || 3), 2, 6);
+    const blueprint = plan.blueprint || buildFallbackBlueprint(userData, 'validation fallback');
+    const report = createValidationReport();
+    const originalWeeks = Array.isArray(plan.weeks) ? plan.weeks : [];
 
-    if (!plan.weeks || !Array.isArray(plan.weeks)) plan.weeks = [];
+    if (!Array.isArray(plan.weeks)) {
+      addValidationIssue(report, 'warning', 'WEEKS_ARRAY_CREATED', 'Array de semanas ausente criado automaticamente.', 'weeks', true);
+    }
 
-    plan.weeks = plan.weeks.slice(0, totalWeeks).map((week, wi) => {
-      const clean = {
-        week: `S${wi + 1}`,
-        phase: week.phase || 'Base',
-        off: Boolean(week.off),
-        workouts: Array.isArray(week.workouts) ? week.workouts.slice(0, daysPerWeek) : []
+    const fixedWeeks = [];
+
+    for (let weekNumber = 1; weekNumber <= totalWeeks; weekNumber++) {
+      const weekIndex = weekNumber - 1;
+      const generatedWeek = generateWorkoutWeek({ weekNumber, totalWeeks, userData, blueprint });
+      const sourceWeek = originalWeeks[weekIndex];
+
+      if (!sourceWeek) {
+        addValidationIssue(report, 'warning', 'WEEK_CREATED', `Semana S${weekNumber} ausente criada automaticamente.`, `weeks[${weekIndex}]`, true);
+      }
+
+      const fallbackPhase = generatedWeek.phase || getPhaseForWeek(weekNumber, blueprint, totalWeeks);
+      const cleanWeek = {
+        week: `S${weekNumber}`,
+        phase: normalizePhaseValue(sourceWeek?.phase, fallbackPhase),
+        off: typeof sourceWeek?.off === 'boolean' ? sourceWeek.off : Boolean(generatedWeek.off),
+        workouts: []
       };
 
-      clean.workouts = clean.workouts.map(w => ({
-        dayOfWeek: w.dayOfWeek || 'Terça',
-        dayType: w.dayType || 'Base',
-        title: w.title || 'Treino',
-        desc: w.desc || '',
-        km: roundKm(w.km),
-        pace: w.pace || '-'
-      }));
+      if (!VALID_PHASES.includes(sourceWeek?.phase)) {
+        addValidationIssue(report, 'warning', 'PHASE_FIXED', `Fase da semana S${weekNumber} ajustada para ${cleanWeek.phase}.`, `weeks[${weekIndex}].phase`, true);
+      }
 
-      return clean;
-    });
+      const sourceWorkouts = Array.isArray(sourceWeek?.workouts) ? sourceWeek.workouts : [];
 
-    if (plan.weeks.length !== totalWeeks) {
-      throw new Error('Falha ao montar todas as semanas do plano.');
+      if (sourceWorkouts.length !== daysPerWeek) {
+        addValidationIssue(
+          report,
+          'warning',
+          'WORKOUT_COUNT_FIXED',
+          `Semana S${weekNumber} ajustada para ${daysPerWeek} treinos.`,
+          `weeks[${weekIndex}].workouts`,
+          true
+        );
+      }
+
+      for (let workoutIndex = 0; workoutIndex < daysPerWeek; workoutIndex++) {
+        cleanWeek.workouts.push(
+          normalizeWorkoutForValidation(
+            sourceWorkouts[workoutIndex],
+            generatedWeek.workouts[workoutIndex],
+            report,
+            `weeks[${weekIndex}].workouts[${workoutIndex}]`
+          )
+        );
+      }
+
+      alignWorkoutDays(cleanWeek, weekNumber, userData, report);
+      ensureLongRunIsLast(cleanWeek, weekNumber, totalWeeks, userData, blueprint, report);
+
+      const weekKm = sumWeekKm(cleanWeek);
+      const longRunKm = cleanWeek.workouts[cleanWeek.workouts.length - 1]?.km || 0;
+      const longRunShare = weekKm > 0 ? longRunKm / weekKm : 0;
+      const distanceKm = getDistanceKm(userData);
+      const maxLongRunShare = distanceKm > 42 ? 0.70 : (daysPerWeek <= 3 ? 0.55 : 0.50);
+
+      if (weekNumber !== totalWeeks && longRunShare > maxLongRunShare) {
+        addValidationIssue(
+          report,
+          'warning',
+          'LONG_RUN_SHARE_HIGH',
+          `Longão representa ${Math.round(longRunShare * 100)}% da semana. Verifique coerência da carga.`,
+          `weeks[${weekIndex}].workouts[${daysPerWeek - 1}].km`,
+          false
+        );
+      }
+
+      fixedWeeks.push(cleanWeek);
+    }
+
+    plan.weeks = fixedWeeks;
+    plan.totalWeeks = totalWeeks;
+    plan.daysPerWeek = daysPerWeek;
+    plan.raceDistance = plan.raceDistance || getDistanceLabel(userData);
+    plan.raceName = plan.raceName || getDistanceLabel(userData);
+    plan.raceDate = plan.raceDate || userData.raceDate;
+    plan.userData = {
+      ...userData,
+      imc: calculateIMC(userData) || userData.imc || null
+    };
+    plan.blueprint = blueprint;
+
+    enforceWeeklyProgression(plan, plan.userData, blueprint, report);
+
+    report.summary.totalKm = plan.weeks.reduce((sum, week) => sum + sumWeekKm(week), 0);
+    report.summary.peakWeekKm = Math.max(...plan.weeks.map(sumWeekKm));
+    report.summary.peakLongRunKm = Math.max(...plan.weeks.map(week => week.workouts[week.workouts.length - 1]?.km || 0));
+    report.summary.totalWeeks = totalWeeks;
+    report.summary.daysPerWeek = daysPerWeek;
+    report.status = report.status === 'error'
+      ? 'error'
+      : report.summary.totalWarnings > 0
+        ? 'warning'
+        : 'ok';
+
+    plan.validation = report;
+
+    if (report.status === 'error') {
+      console.error('Validation Engine encontrou erro não corrigido:', report);
+      throw new Error('O plano gerado não passou na validação técnica.');
+    }
+
+    if (report.summary.totalFixes > 0 || report.summary.totalWarnings > 0) {
+      console.info('Validation Engine finalizado:', report);
     }
 
     return plan;
@@ -845,6 +1188,7 @@ REGRAS:
       totalWeeks: weeksData.length,
       weeks: weeksData,
       blueprint: plan.blueprint || null,
+      validation: plan.validation || null,
       generatedAt: plan.generatedAt,
       userData: plan.userData
     };

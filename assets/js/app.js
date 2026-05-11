@@ -558,8 +558,12 @@ function renderAIPlanResult(plan) {
 
   document.getElementById('ai-result-title').textContent = plan.planName || 'Plano Gerado';
   const imcStr = plan.userData && plan.userData.imc ? ` • IMC: ${plan.userData.imc}` : '';
+  const validationStr = plan.validation
+    ? ` • Validação: ${plan.validation.status === 'ok' ? 'OK' : `${plan.validation.summary.totalFixes} ajuste(s)`}`
+    : '';
+
   document.getElementById('ai-result-meta').textContent =
-    `${plan.totalWeeks} semanas • ${plan.raceName} • ${plan.daysPerWeek} dias/semana${imcStr}`;
+    `${plan.totalWeeks} semanas • ${plan.raceName} • ${plan.daysPerWeek} dias/semana${imcStr}${validationStr}`;
 
   const weeksEl = document.getElementById('ai-result-weeks');
   weeksEl.innerHTML = plan.weeks.map((week, i) => {

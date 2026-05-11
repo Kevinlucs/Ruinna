@@ -1,29 +1,29 @@
 # 🏃‍♂️ PLAN RUN
 
-O **PLAN RUN** é um Progressive Web App (PWA) avançado, criado para organizar, gerar e acompanhar planos de treino de corrida. Utilizando Inteligência Artificial (Google Gemini), o aplicativo gera planilhas de treinamento totalmente personalizadas para diferentes níveis de atletas e distâncias, desde os 5km até a Ultramaratona.
+O **PLAN RUN** é um Progressive Web App (PWA) para gerar, organizar e acompanhar planos de treino de corrida. A arquitetura atual usa um modelo híbrido: a IA atua como gestora estratégica e o motor local do app monta a planilha completa com semanas, treinos, volumes, paces e datas.
 
-## ✨ Novidades e Principais Funcionalidades
+## ✨ Principais Funcionalidades
 
-- **🧠 IA Coach Integrado:** Geração de planilhas de treinamento do zero usando a API do Google Gemini. A IA analisa idade, peso, nível de experiência, dias disponíveis e resultados do Teste de 3km para prescrever paces, volumes e estratégias precisas.
-- **🍎 Nutrição Inteligente:** Prescrição dinâmica de hidratação e suplementação (Pré, Intra e Pós-treino) humanizada e adaptada ao tipo e distância de cada treino.
-- **🔐 Sistema de Login e Segurança:** Proteção de acesso com múltiplos usuários. A chave da API do Gemini e as senhas ficam ocultas em um arquivo local (`config.js`), não exposto no repositório.
-- **📊 Estatísticas e Acompanhamento:** Contagem regressiva precisa para o dia da prova (corrigindo bugs de fuso horário), barra de progresso de quilometragem e controle de treinos realizados (streak).
-- **✏️ Customização:** Capacidade de editar treinos, alterar descrições e paces manualmente.
-- **📱 PWA Responsivo:** Tema escuro inspirado no Strava, otimizado para celular, podendo ser instalado na tela inicial e funcionando offline.
+- **🧠 IA como gestora estratégica:** o Gemini gera um blueprint pequeno com estratégia, zonas de pace, progressão e fases do plano.
+- **⚙️ Motor próprio de treino:** o JavaScript gera todas as semanas localmente, inclusive planos longos de 20, 30+ semanas, sem depender de JSON gigante da IA.
+- **🛡️ Validation Engine:** valida e corrige automaticamente estrutura do plano, quantidade de semanas, treinos por semana, longão no final, semana da prova, fases, tipos de treino, volumes e campos obrigatórios.
+- **🔐 Sistema de Login:** acesso controlado por usuários configurados no `config.js`.
+- **📊 Acompanhamento:** contagem regressiva para a prova, progresso de quilometragem e controle dos treinos realizados.
+- **✏️ Customização:** edição manual de treinos, descrições e paces.
+- **📱 PWA Responsivo:** tema escuro, otimizado para celular e instalável na tela inicial.
 
 ## 🚀 Como Executar Localmente
 
-Como o sistema conta com integração de IA, é necessário configurar sua própria chave de API.
-
 1. Clone o repositório:
 ```bash
-git clone https://github.com/Kevinlucs/planeBsb.git planRun
-cd planRun
+git clone https://github.com/Kevinlucs/PlanRun.git
+cd PlanRun
 ```
 
 2. Configure suas credenciais:
-- Copie o arquivo de exemplo: `cp config.js.example config.js`
-- Edite o `config.js` e insira sua **API Key do Google Gemini** e configure as senhas dos usuários desejados.
+- Copie o arquivo de exemplo: `cp config/config.js.example config/config.js`
+- Edite o `config/config.js` e configure os usuários desejados.
+- Configure a variável `GEMINI_API_KEY` na Vercel para usar o endpoint `/api/generate-plan`.
 
 3. Execute um servidor local na pasta do projeto:
 ```bash
@@ -32,12 +32,40 @@ npx serve .
 python -m http.server 8000
 ```
 
-4. Acesse no navegador em `http://localhost:3000` ou `http://localhost:8000`.
+4. Acesse no navegador:
+```txt
+http://localhost:3000
+# ou
+http://localhost:8000
+```
 
 ## 🛠️ Tecnologias Utilizadas
+
 - **Frontend:** Vanilla JavaScript, HTML5, CSS3.
-- **Armazenamento:** `localStorage` (persistência completa de treinos e planos sem necessidade de banco de dados externo).
-- **Inteligência Artificial:** Google Gemini API (`gemini-2.5-flash`).
+- **Armazenamento:** `localStorage`.
+- **IA:** Google Gemini API.
+- **Deploy:** Vercel.
+- **PWA:** Service Worker + Manifest.
+
+## 🧩 Arquitetura do Plano
+
+```txt
+Formulário do atleta
+↓
+Cálculos locais: IMC, semanas, distância, paces base
+↓
+IA gera blueprint estratégico pequeno
+↓
+Plan Engine gera semanas e treinos localmente
+↓
+Validation Engine corrige e valida o plano
+↓
+Plano é salvo no localStorage
+```
 
 ## 🔜 Próximos Passos
-- Transformar o sistema PWA em um aplicativo mobile nativo (Android/iOS) para publicação na Play Store e App Store.
+
+- Criar tela de revisão técnica do plano.
+- Adicionar exportação em CSV/Excel/PDF.
+- Criar check-in semanal para replanejamento adaptativo.
+- Futuramente migrar para Supabase/PostgreSQL quando houver mais usuários e necessidade de sincronização entre dispositivos.
