@@ -247,3 +247,13 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Removido clique no input date para evitar disparo duplo do datepicker.
 - Ícone nativo preto do datepicker ocultado com regras adicionais.
 - Cache atualizado para `planrun-v27`.
+
+
+## Storage Service - v28
+
+- Adicionado `assets/js/storage-service.js` como camada central de persistência.
+- Plano, adoção, progresso, customizações, feedbacks, check-ins e ajustes agora passam por uma API única.
+- Dados passaram a ser salvos por usuário com fallback de leitura para chaves antigas.
+- Backup/importação usa snapshot centralizado do usuário.
+- Preparação para futura migração para Supabase/Firebase sem reescrever o app inteiro.
+- Cache atualizado para `planrun-v28`.

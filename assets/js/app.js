@@ -66,46 +66,48 @@ WEEKS_DATA.forEach((w, i) => {
 });
 
 // ===== STATE =====
-let completedWorkouts = JSON.parse(localStorage.getItem('planebsb_completed') || '{}');
-let customizations = JSON.parse(localStorage.getItem('planebsb_custom') || '{}');
-let workoutFeedback = JSON.parse(localStorage.getItem(getWorkoutFeedbackKey()) || '{}');
-let weeklyCheckins = JSON.parse(localStorage.getItem(getWeeklyCheckinsKey()) || '{}');
-let adjustmentHistory = JSON.parse(localStorage.getItem(getAdjustmentHistoryKey()) || '[]');
+let completedWorkouts = StorageService.loadCompletedWorkouts();
+let customizations = StorageService.loadCustomizations();
+let workoutFeedback = StorageService.loadWorkoutFeedback();
+let weeklyCheckins = StorageService.loadWeeklyCheckins();
+let adjustmentHistory = StorageService.loadAdjustmentHistory();
 let currentPage = 'home';
 let currentPhase = null;
 let currentWorkout = null;
 let pageHistory = [];
 
 function getCurrentUserKey() {
-  return localStorage.getItem('planebsb_current_user') || 'guest';
+  return StorageService.getCurrentUser();
 }
 
 function getWorkoutFeedbackKey() {
-  return `${getCurrentUserKey()}_planebsb_workout_feedback`;
+  return StorageService.keys().workoutFeedback;
 }
 
 function getWeeklyCheckinsKey() {
-  return `${getCurrentUserKey()}_planebsb_weekly_checkins`;
+  return StorageService.keys().weeklyCheckins;
 }
 
 function getAdjustmentHistoryKey() {
-  return `${getCurrentUserKey()}_planebsb_adjustment_history`;
+  return StorageService.keys().adjustmentHistory;
 }
 
 function getAIPlanStorageKey() {
-  return `${getCurrentUserKey()}_planebsb_ai_plan`;
+  return StorageService.keys().plan;
 }
 
-function saveCompleted() { localStorage.setItem('planebsb_completed', JSON.stringify(completedWorkouts)); }
-function saveCustom() { localStorage.setItem('planebsb_custom', JSON.stringify(customizations)); }
-function saveWorkoutFeedback() { localStorage.setItem(getWorkoutFeedbackKey(), JSON.stringify(workoutFeedback)); }
-function saveWeeklyCheckins() { localStorage.setItem(getWeeklyCheckinsKey(), JSON.stringify(weeklyCheckins)); }
-function saveAdjustmentHistory() { localStorage.setItem(getAdjustmentHistoryKey(), JSON.stringify(adjustmentHistory)); }
+function saveCompleted() { StorageService.saveCompletedWorkouts(completedWorkouts); }
+function saveCustom() { StorageService.saveCustomizations(customizations); }
+function saveWorkoutFeedback() { StorageService.saveWorkoutFeedback(workoutFeedback); }
+function saveWeeklyCheckins() { StorageService.saveWeeklyCheckins(weeklyCheckins); }
+function saveAdjustmentHistory() { StorageService.saveAdjustmentHistory(adjustmentHistory); }
 
 function reloadUserAdaptiveState() {
-  workoutFeedback = JSON.parse(localStorage.getItem(getWorkoutFeedbackKey()) || '{}');
-  weeklyCheckins = JSON.parse(localStorage.getItem(getWeeklyCheckinsKey()) || '{}');
-  adjustmentHistory = JSON.parse(localStorage.getItem(getAdjustmentHistoryKey()) || '[]');
+  completedWorkouts = StorageService.loadCompletedWorkouts();
+  customizations = StorageService.loadCustomizations();
+  workoutFeedback = StorageService.loadWorkoutFeedback();
+  weeklyCheckins = StorageService.loadWeeklyCheckins();
+  adjustmentHistory = StorageService.loadAdjustmentHistory();
 }
 
 function getWorkoutFeedback(id) {
@@ -1667,18 +1669,11 @@ function handleExportPDF() {
 }
 
 function buildBackupPayload() {
+  const snapshot = StorageService.getUserSnapshot();
   return {
     app: 'PlanRun',
-    backupVersion: 1,
-    exportedAt: new Date().toISOString(),
-    user: getCurrentUserKey(),
-    isAdopted: typeof AICoach !== 'undefined' ? AICoach.isPlanAdopted() : false,
-    plan: typeof AICoach !== 'undefined' ? AICoach.loadPlan() : null,
-    completedWorkouts,
-    customizations,
-    workoutFeedback,
-    weeklyCheckins,
-    adjustmentHistory
+    version: '1.0',
+    ...snapshot
   };
 }
 
@@ -1715,37 +1710,26 @@ function validateBackupPayload(payload) {
 }
 
 function applyBackupPayload(payload) {
-  if (payload.plan) {
-    localStorage.setItem(getAIPlanStorageKey(), JSON.stringify(payload.plan));
-    localStorage.setItem(`${getCurrentUserKey()}_planebsb_ai_adopted`, payload.isAdopted === false ? 'false' : 'true');
-
-    if (payload.isAdopted === false) {
-      localStorage.removeItem(`${getCurrentUserKey()}_planebsb_ai_adopted`);
-    }
-  }
-
-  completedWorkouts = payload.completedWorkouts || {};
-  customizations = payload.customizations || {};
-  workoutFeedback = payload.workoutFeedback || {};
-  weeklyCheckins = payload.weeklyCheckins || {};
-  adjustmentHistory = Array.isArray(payload.adjustmentHistory) ? payload.adjustmentHistory : [];
-
-  saveCompleted();
-  saveCustom();
-  saveWorkoutFeedback();
-  saveWeeklyCheckins();
-  saveAdjustmentHistory();
+  StorageService.applyUserSnapshot({
+    plan: payload.plan || null,
+    isAdopted: payload.isAdopted,
+    completedWorkouts: payload.completedWorkouts || {},
+    customizations: payload.customizations || {},
+    workoutFeedback: payload.workoutFeedback || {},
+    weeklyCheckins: payload.weeklyCheckins || {},
+    adjustmentHistory: payload.adjustmentHistory || []
+  });
 
   reloadUserAdaptiveState();
 
-  if (payload.plan && payload.isAdopted !== false && typeof AICoach !== 'undefined') {
+  if (AICoach.isPlanAdopted()) {
     applyAdoptedPlan();
   }
 
   renderHome();
   renderPhases();
   renderStats();
-  updateAdoptedBanner?.();
+  renderAICoachPage();
 }
 
 function handleImportBackupFile(file) {
@@ -3209,7 +3193,7 @@ function applyAdjustmentToStoredPlan(weekIndex, factor, action, weeksToAdjust) {
     week.totalKm = week.workouts.reduce((sum, w) => sum + Number(w.km || 0), 0);
   }
 
-  localStorage.setItem(getAIPlanStorageKey(), JSON.stringify(plan));
+  StorageService.savePlan(plan);
 
   if (AICoach.isPlanAdopted()) {
     applyAdoptedPlan();
@@ -3275,7 +3259,7 @@ function getDayNameFromDate(date) {
 
 function saveStoredPlan(plan) {
   if (!plan) return false;
-  localStorage.setItem(getAIPlanStorageKey(), JSON.stringify(plan));
+  StorageService.savePlan(plan);
   return true;
 }
 
@@ -3758,8 +3742,7 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
   const errorEl = document.getElementById('login-error');
 
   if (ALLOWED_USERS[user] && ALLOWED_USERS[user] === pass) {
-    localStorage.setItem('planebsb_logged_in', 'true');
-    localStorage.setItem('planebsb_current_user', user);
+    StorageService.login(user);
     reloadUserAdaptiveState();
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
@@ -3799,7 +3782,7 @@ window.addEventListener('load', () => {
     document.getElementById('splash-screen').style.display = 'none';
     
     // Check Login State
-    const isLoggedIn = localStorage.getItem('planebsb_logged_in') === 'true';
+    const isLoggedIn = StorageService.isLoggedIn();
     if (!isLoggedIn) {
       document.getElementById('login-screen').classList.remove('hidden');
     } else {

@@ -3,8 +3,8 @@
 // A IA gera um blueprint pequeno; o PlanRun monta todas as semanas localmente.
 
 const AICoach = (() => {
-  function getPlanKey() { return `${localStorage.getItem('planebsb_current_user')}_planebsb_ai_plan`; }
-  function getAdoptedKey() { return `${localStorage.getItem('planebsb_current_user')}_planebsb_ai_adopted`; }
+  function getPlanKey() { return StorageService.keys().plan; }
+  function getAdoptedKey() { return StorageService.keys().adopted; }
 
   const API_ENDPOINT = '/api/generate-plan';
 
@@ -1291,36 +1291,35 @@ REGRAS:
   // ===== PERSISTENCE =====
   function savePlan(plan) {
     const converted = convertToWeeksData(plan);
-    localStorage.setItem(getPlanKey(), JSON.stringify(converted));
+    StorageService.savePlan(converted);
     return converted;
   }
 
   function loadPlan() {
     try {
-      return JSON.parse(localStorage.getItem(getPlanKey()) || 'null');
+      return StorageService.loadPlan();
     } catch {
       return null;
     }
   }
 
   function clearPlan() {
-    localStorage.removeItem(getPlanKey());
-    localStorage.removeItem(getAdoptedKey());
+    StorageService.clearPlan();
   }
 
   function adoptPlan() {
     const plan = loadPlan();
     if (!plan) return false;
-    localStorage.setItem(getAdoptedKey(), 'true');
+    StorageService.setPlanAdopted(true);
     return true;
   }
 
   function unadoptPlan() {
-    localStorage.removeItem(getAdoptedKey());
+    StorageService.setPlanAdopted(false);
   }
 
   function isPlanAdopted() {
-    return localStorage.getItem(getAdoptedKey()) === 'true';
+    return StorageService.isPlanAdopted();
   }
 
   // ===== CONVERT ADOPTED PLAN TO allWorkouts FORMAT =====

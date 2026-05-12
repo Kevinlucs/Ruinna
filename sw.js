@@ -1,9 +1,10 @@
-const CACHE_NAME = 'planrun-v27';
+const CACHE_NAME = 'planrun-v28';
 const ASSETS = [
   './',
   './index.html',
   './assets/css/styles.css',
   './assets/js/app.js',
+  './assets/js/storage-service.js',
   './assets/js/ai-coach.js',
   './config/config.js',
   './manifest.json',
