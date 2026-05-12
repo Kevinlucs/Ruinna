@@ -17,6 +17,27 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+
+window.openNativeDatePicker = function(input) {
+  if (!input) return;
+
+  try {
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+  } catch (error) {
+    // Alguns navegadores bloqueiam showPicker fora de gesto direto.
+  }
+
+  try {
+    input.focus();
+    input.click();
+  } catch {
+    input.focus();
+  }
+};
+
 function fmtBR(d) {
   const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   return `${dias[d.getDay()]}, ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -682,6 +703,44 @@ function renderKmComparisonChart(rows) {
     </div>
   `;
 }
+function renderLongRunHorizontalChart(rows) {
+  const longRunRows = rows
+    .map(row => ({
+      ...row,
+      longRunKm: getWeekLongRunKm(row.weekIndex)
+    }))
+    .filter(row => row.longRunKm > 0);
+
+  if (!longRunRows.length) {
+    return '<div class="evolution-chart-empty">Sem longões no plano.</div>';
+  }
+
+  const visibleRows = longRunRows.slice(-12);
+  const maxLongRun = Math.max(1, ...visibleRows.map(row => Number(row.longRunKm || 0)));
+
+  return `
+    <div class="longrun-horizontal-list">
+      ${visibleRows.map(row => {
+        const pct = clampPercent((Number(row.longRunKm || 0) / maxLongRun) * 100);
+        const tone = getRowStatusTone(row);
+
+        return `
+          <div class="longrun-horizontal-row ${tone}">
+            <div class="longrun-week">
+              <strong>${escapeHTML(row.week)}</strong>
+              <span>${escapeHTML(row.phase)}</span>
+            </div>
+            <div class="longrun-track">
+              <span style="width:${Math.max(8, pct)}%"></span>
+            </div>
+            <div class="longrun-value">${formatKmShort(row.longRunKm)} km</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
 
 function renderAdjustmentTimeline(rows) {
   const adjustedRows = rows
@@ -805,12 +864,7 @@ function renderEvolutionDashboard() {
             <h4>Evolução dos longões</h4>
           </div>
         </div>
-        ${renderMiniBarChart(rows, {
-          type: 'longrun',
-          maxValue: maxLongRun,
-          valueLabel: value => `${formatKmShort(value)}km`,
-          emptyLabel: 'Sem longões no plano.'
-        })}
+        ${renderLongRunHorizontalChart(rows)}
       </div>
 
       <div class="dashboard-chart-card">

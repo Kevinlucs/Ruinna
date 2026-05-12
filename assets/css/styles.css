@@ -4297,3 +4297,144 @@ select.ai-input {
     max-height: calc(100dvh - 180px);
   }
 }
+
+
+/* ===== LONGRUN + DATEPICKER FIX V26 ===== */
+
+/* Esconde o ícone nativo preto do input date e deixa somente o botão colorido do app. */
+input[type="date"].ai-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
+  -webkit-appearance: none;
+}
+
+input[type="date"].ai-input {
+  color-scheme: dark;
+}
+
+.date-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.date-input-wrap .ai-input {
+  padding-right: 48px;
+}
+
+.date-picker-btn {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(252, 76, 2, 0.95), rgba(255, 140, 66, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 6px 14px rgba(252, 76, 2, 0.18);
+}
+
+.date-picker-btn:hover,
+.date-picker-btn:focus {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  outline: none;
+}
+
+/* Campo de distância extra para Ultra/Personalizado */
+#ai-custom-dist-group {
+  min-width: 240px;
+}
+
+#ai-custom-dist-group .ai-label {
+  white-space: normal;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* Evolução dos longões em linhas horizontais, sem card vazio e sem barras verticais. */
+.dashboard-chart-card:has(.longrun-horizontal-list) {
+  min-height: unset;
+}
+
+.longrun-horizontal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(252, 76, 2, 0.45) rgba(255, 255, 255, 0.06);
+}
+
+.longrun-horizontal-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 58px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.longrun-horizontal-row.success {
+  border-color: rgba(76, 217, 100, 0.18);
+}
+
+.longrun-horizontal-row.warning {
+  border-color: rgba(255, 193, 7, 0.18);
+}
+
+.longrun-week strong,
+.longrun-week span {
+  display: block;
+}
+
+.longrun-week strong {
+  color: var(--accent-light);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.longrun-week span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.longrun-track {
+  height: 11px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.longrun-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+}
+
+.longrun-value {
+  text-align: right;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .ai-form-row:has(#ai-custom-dist-group) {
+    grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.85fr);
+  }
+}
+
+@media (max-width: 640px) {
+  #ai-custom-dist-group {
+    min-width: 0;
+  }
+
+  .longrun-horizontal-row {
+    grid-template-columns: 50px minmax(0, 1fr) 52px;
+  }
+}

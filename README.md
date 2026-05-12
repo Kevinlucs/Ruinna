@@ -228,3 +228,12 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - A IA foi orientada a não cortar carga apenas porque a próxima semana planejada é maior que a semana recém-concluída.
 - Modal de feedback do check-in agora tem altura controlada e scroll interno.
 - Cache atualizado para `planrun-v25`.
+
+
+## Ajustes de longões e datepicker - v26
+
+- Card "Evolução dos longões" agora usa barras horizontais por semana.
+- Campo extra de distância para Ultra/Personalizado ficou mais responsivo no desktop.
+- Corrigido `openNativeDatePicker is not defined`.
+- Ícone nativo preto do datepicker foi ocultado; fica somente o botão colorido do app.
+- Cache atualizado para `planrun-v26`.
