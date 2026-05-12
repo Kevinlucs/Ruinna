@@ -370,8 +370,14 @@ function renderWorkoutDetail(id) {
       <div class="wd-stat"><div class="wd-stat-icon">🏷️</div><div class="wd-stat-value">${w.dayType}</div><div class="wd-stat-label">Tipo</div></div>
       <div class="wd-stat"><div class="wd-stat-icon">📆</div><div class="wd-stat-value">${w.week}</div><div class="wd-stat-label">Semana</div></div>
     </div>
+    <div class="manual-editor-entry">
+      <button class="btn-manual-editor" onclick="openManualPlanEditor('${w.id}')">
+        <span>✏️</span> Editar treino completo
+      </button>
+      <small>Altere título, data, tipo, distância, pace e descrição deste treino.</small>
+    </div>
     <div class="wd-description" id="wd-desc-block">
-      <button class="btn-edit-inline" onclick="startEditDesc('${w.id}')">✏️ Editar</button>
+      <button class="btn-edit-inline" onclick="startEditDesc('${w.id}')">✏️ Editar descrição</button>
       <h3>Descrição do Treino</h3>
       <p>${desc}${w.off ? '<br><br>⚠️ <strong>Semana de recuperação</strong> — respeite o descanso!' : ''}</p>
     </div>
@@ -2689,6 +2695,196 @@ function startEditPace(id) {
   document.getElementById('modal-cancel').onclick = () => {
     document.getElementById('modal-overlay').classList.add('hidden');
   };
+}
+
+
+function getWorkoutIndexInsideWeek(workout) {
+  return allWorkouts
+    .filter(item => item.weekIndex === workout.weekIndex)
+    .findIndex(item => item.id === workout.id);
+}
+
+function syncManualWorkoutEdit(id, updates) {
+  const workout = allWorkouts.find(item => item.id === id);
+  if (!workout) return false;
+
+  const date = updates.date ? parseLocalEditorDate(updates.date) : new Date(workout.date);
+  const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const dateStr = fmt(date);
+  const dateBR = fmtBR(date);
+  const day = dayNames[date.getDay()];
+
+  Object.assign(workout, {
+    title: updates.title || workout.title,
+    desc: updates.desc || '',
+    km: Number(updates.km || 0),
+    pace: updates.pace || '-',
+    dayType: updates.dayType || workout.dayType,
+    day,
+    date,
+    dateStr,
+    dateBR
+  });
+
+  const plan = AICoach.loadPlan();
+  if (plan && Array.isArray(plan.weeks) && plan.weeks[workout.weekIndex]) {
+    const workoutIndex = getWorkoutIndexInsideWeek(workout);
+    const planWorkout = plan.weeks[workout.weekIndex].workouts?.[workoutIndex];
+
+    if (planWorkout) {
+      planWorkout.title = workout.title;
+      planWorkout.desc = workout.desc;
+      planWorkout.km = workout.km;
+      planWorkout.pace = workout.pace;
+      planWorkout.dayType = workout.dayType;
+      planWorkout.dayOfWeek = workout.day;
+      planWorkout.date = workout.date.toISOString();
+      plan.weeks[workout.weekIndex].totalKm = plan.weeks[workout.weekIndex].workouts.reduce((sum, item) => sum + Number(item.km || 0), 0);
+      localStorage.setItem(getAIPlanStorageKey(), JSON.stringify(plan));
+    }
+  }
+
+  if (!customizations[id]) customizations[id] = {};
+  customizations[id].desc = workout.desc;
+  customizations[id].pace = workout.pace;
+  customizations[id].manualEdited = true;
+  customizations[id].updatedAt = new Date().toISOString();
+  saveCustom();
+
+  const feedback = workoutFeedback[id];
+  if (feedback) {
+    feedback.plannedKm = workout.km;
+    feedback.plannedPace = workout.pace;
+    feedback.updatedAt = new Date().toISOString();
+    saveWorkoutFeedback();
+  }
+
+  return true;
+}
+
+function parseLocalEditorDate(value) {
+  if (!value) return new Date();
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function openManualPlanEditor(id) {
+  const w = allWorkouts.find(item => item.id === id);
+  if (!w) return;
+
+  const safeTitle = escapeHTML(w.title);
+  const safeDesc = escapeHTML(getDesc(w));
+  const safePace = escapeHTML(getPace(w));
+  const safeDate = w.dateStr || fmt(w.date);
+  const safeKm = Number(w.km || 0);
+  const types = ['Base', 'Qualidade', 'Longão', 'Recuperação', 'Intervalado', 'Subida', 'Tempo Run', 'Prova'];
+
+  document.getElementById('modal-icon').textContent = '✏️';
+  document.getElementById('modal-title').textContent = 'Editor Manual do Treino';
+  document.getElementById('modal-message').innerHTML = `
+    <form class="manual-plan-form" onsubmit="return false;">
+      <div class="manual-editor-context">
+        <strong>${escapeHTML(w.week)} • ${escapeHTML(w.phase)}</strong>
+        <span>${escapeHTML(w.dateBR)} • ${escapeHTML(w.dayType)}</span>
+      </div>
+
+      <label>Título do treino</label>
+      <input class="edit-field" id="manual-edit-title" type="text" value="${safeTitle}" maxlength="60">
+
+      <div class="manual-editor-grid">
+        <div>
+          <label>Data</label>
+          <input class="edit-field" id="manual-edit-date" type="date" value="${safeDate}">
+        </div>
+        <div>
+          <label>Tipo</label>
+          <select class="edit-field" id="manual-edit-type">
+            ${types.map(type => `<option value="${type}" ${type === w.dayType ? 'selected' : ''}>${type}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="manual-editor-grid">
+        <div>
+          <label>Distância planejada</label>
+          <input class="edit-field" id="manual-edit-km" type="number" min="0" step="0.1" value="${safeKm}">
+        </div>
+        <div>
+          <label>Pace planejado</label>
+          <input class="edit-field" id="manual-edit-pace" type="text" value="${safePace}" maxlength="24" placeholder="Ex: 6:30/km">
+        </div>
+      </div>
+
+      <label>Descrição</label>
+      <textarea class="edit-field" id="manual-edit-desc" rows="4" maxlength="220">${safeDesc}</textarea>
+
+      <div class="manual-editor-warning">
+        Alterações manuais são salvas no plano ativo, aparecem no app, no PDF, no XLS e no backup.
+      </div>
+    </form>
+  `;
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('manual-edit-title')?.focus(), 100);
+
+  document.getElementById('modal-confirm').onclick = () => saveManualPlanEdit(id);
+  document.getElementById('modal-cancel').onclick = () => {
+    document.getElementById('modal-overlay').classList.add('hidden');
+  };
+}
+
+function saveManualPlanEdit(id) {
+  const title = document.getElementById('manual-edit-title')?.value?.trim();
+  const date = document.getElementById('manual-edit-date')?.value;
+  const dayType = document.getElementById('manual-edit-type')?.value;
+  const km = Number(document.getElementById('manual-edit-km')?.value || 0);
+  const pace = document.getElementById('manual-edit-pace')?.value?.trim();
+  const desc = document.getElementById('manual-edit-desc')?.value?.trim();
+
+  if (!title) {
+    alert('Informe um título para o treino.');
+    return;
+  }
+
+  if (!date) {
+    alert('Informe uma data válida.');
+    return;
+  }
+
+  if (Number.isNaN(km) || km < 0) {
+    alert('Informe uma distância válida.');
+    return;
+  }
+
+  syncManualWorkoutEdit(id, {
+    title,
+    date,
+    dayType,
+    km,
+    pace: pace || '-',
+    desc: desc || ''
+  });
+
+  document.getElementById('modal-overlay').classList.add('hidden');
+  renderWorkoutDetail(id);
+  renderHome();
+  renderPhases();
+  renderStats();
+}
+
+function resetManualWorkoutEdit(id) {
+  if (!customizations[id]?.manualEdited) return;
+  delete customizations[id];
+  saveCustom();
+
+  if (AICoach.isPlanAdopted()) {
+    applyAdoptedPlan();
+  }
+
+  renderWorkoutDetail(id);
+  renderHome();
+  renderPhases();
+  renderStats();
 }
 
 // ===== EVENT LISTENERS =====

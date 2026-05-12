@@ -169,3 +169,7 @@ A IA não reescreve a planilha inteira; ela apenas interpreta o check-in e justi
 ### Check-in Feedback Instantâneo
 
 Após o atleta responder o check-in semanal, o app agora exibe imediatamente um feedback do Coach IA ou da regra local, com aderência, km realizado, esforço, sensação, dor/incômodo e ajuste aplicado. A análise completa permanece na aba Stats.
+
+## Manual Plan Editor
+
+A camada Manual Plan Editor permite editar treinos individuais do plano ativo sem regenerar a planilha. O atleta pode alterar título, data, tipo, distância, pace e descrição. As alterações são refletidas no app, nos relatórios PDF/XLS e no backup JSON.
