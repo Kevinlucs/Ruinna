@@ -5282,3 +5282,109 @@ input[type="date"].ai-input {
     height: 88px;
   }
 }
+
+
+/* ===== PROFILE SETTINGS REFINEMENT + WEIGHT CHECK-IN V34 ===== */
+.settings-grid.refined {
+  grid-template-columns: 1fr;
+}
+
+.settings-card-plan {
+  background:
+    radial-gradient(circle at top right, rgba(252, 76, 2, 0.12), transparent 35%),
+    var(--bg-card);
+}
+
+.settings-plan-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-profile-editor-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.settings-photo-editor.compact {
+  margin-bottom: 0;
+}
+
+.settings-form-grid.profile-only {
+  grid-template-columns: 1fr;
+}
+
+.settings-readonly-field {
+  padding: 12px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-readonly-field span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+
+.settings-readonly-field strong {
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.settings-actions.end {
+  justify-content: flex-end;
+}
+
+.checkin-weight-box {
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(252, 76, 2, 0.14), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(252, 76, 2, 0.24);
+}
+
+.checkin-weight-box strong {
+  display: block;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.checkin-weight-box p {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .settings-grid.refined {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-plan-grid.compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .settings-profile-editor-layout {
+    grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+
+  .settings-form-grid.profile-only {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-plan-grid.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions.end {
+    justify-content: stretch;
+  }
+}

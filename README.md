@@ -305,3 +305,17 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Adicionado upload/remover foto do atleta, salvo localmente por usuário.
 - Dados do perfil ajudam a preencher o IA Coach, mas não recalculam a planilha ativa.
 - Cache atualizado para `planrun-v33`.
+
+
+## Perfil lapidado + peso no check-in - v34
+
+- Aba Ajustes simplificada.
+- Removido card “Perfil logado”.
+- “Plano atual” virou “Planilha atual” e ocupa o topo.
+- Dados pessoais foram reorganizados.
+- Editáveis: foto, nome e peso atual.
+- Idade, altura, objetivo e quantidade de treinos ficam somente como leitura.
+- Removido botão “Restaurar”.
+- A cada 4 semanas concluídas, o check-in exige peso atual.
+- Peso do check-in atualiza o perfil, recalcula IMC e alimenta a análise do Coach IA.
+- Cache atualizado para `planrun-v34`.

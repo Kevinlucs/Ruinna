@@ -527,7 +527,7 @@ function renderStats() {
   ];
   
   const plan = AICoach.loadPlan();
-  const profile = plan && plan.userData ? plan.userData : null;
+  const profile = getCurrentAthleteMetrics ? getCurrentAthleteMetrics() : (plan && plan.userData ? plan.userData : null);
   if (profile && profile.imc) {
     const imc = parseFloat(profile.imc);
     document.getElementById('stat-imc').textContent = imc.toFixed(1);
@@ -1816,6 +1816,8 @@ function renderAICoachPage() {
   formSection.classList.remove('hidden');
   
   // Restore profile data if exists
+  const athleteMetrics = typeof getCurrentAthleteMetrics === 'function' ? getCurrentAthleteMetrics() : null;
+  const localProfile = athleteMetrics?.profile || null;
   const profile = AICoach.loadProfile();
   if (profile) {
     if (profile.name) document.getElementById('ai-name').value = profile.name;
@@ -1834,8 +1836,17 @@ function renderAICoachPage() {
     if (profile.time21k) document.getElementById('ai-time21k').value = profile.time21k;
     if (profile.time42k) document.getElementById('ai-time42k').value = profile.time42k;
     if (profile.objective) document.getElementById('ai-objective').value = profile.objective;
+    if (localProfile?.displayName) document.getElementById('ai-name').value = localProfile.displayName;
+    if (localProfile?.age) document.getElementById('ai-age').value = localProfile.age;
+    if (localProfile?.height) document.getElementById('ai-height').value = localProfile.height;
+    if (localProfile?.weight) document.getElementById('ai-weight').value = localProfile.weight;
     toggleCustomDistance();
     updateWeeksInfo();
+  } else if (localProfile) {
+    if (localProfile.displayName) document.getElementById('ai-name').value = localProfile.displayName;
+    if (localProfile.age) document.getElementById('ai-age').value = localProfile.age;
+    if (localProfile.height) document.getElementById('ai-height').value = localProfile.height;
+    if (localProfile.weight) document.getElementById('ai-weight').value = localProfile.weight;
   }
   // Show adopted banner if plan is adopted
   updateAdoptedBanner();
@@ -2691,6 +2702,14 @@ function openWeeklyCheckin(weekIndex) {
         <option value="no" selected>Não</option>
         <option value="yes">Sim</option>
       </select>
+      ${((weekIndex + 1) % 4 === 0) ? `
+        <div class="checkin-weight-box">
+          <strong>Atualização obrigatória de peso</strong>
+          <p>A cada 4 semanas, informe seu peso atual para recalcular o IMC e ajudar o Coach IA na análise.</p>
+          <label>Peso atual (kg)</label>
+          <input type="number" class="edit-field" id="checkin-current-weight" min="30" max="250" step="0.1" value="${getCurrentAthleteMetrics().weight || ''}" placeholder="Ex: 82.5">
+        </div>
+      ` : ''}
       <label>Observações</label>
       <textarea class="edit-field" id="checkin-notes" rows="3" placeholder="Sono, cansaço, dores, rotina, dificuldade dos treinos..."></textarea>
     </div>
@@ -2709,11 +2728,25 @@ function openWeeklyCheckin(weekIndex) {
     const originalText = confirmBtn.textContent;
     let resultPayload = null;
 
+    const requiresWeight = (weekIndex + 1) % 4 === 0;
+    const currentWeight = document.getElementById('checkin-current-weight')?.value || '';
+
+    if (requiresWeight && !currentWeight) {
+      showToast('Informe o peso atual para concluir o check-in da 4ª semana.', 'error');
+      return;
+    }
+
+    if (requiresWeight) {
+      syncAthleteWeight(currentWeight, `checkin-S${weekIndex + 1}`);
+    }
+
     const feedback = {
       feeling: document.getElementById('checkin-feeling')?.value || 'normal',
       effort: Number(document.getElementById('checkin-effort')?.value || summary.averageEffort || 6),
       pain: document.getElementById('checkin-pain')?.value === 'yes',
       notes: document.getElementById('checkin-notes')?.value?.trim() || '',
+      currentWeight: currentWeight || null,
+      currentIMC: currentWeight ? calculateIMCFromValues(currentWeight, getCurrentAthleteMetrics().height) : getCurrentAthleteMetrics().imc,
       summary,
       createdAt: new Date().toISOString()
     };
@@ -2819,6 +2852,12 @@ function showWeeklyCheckinResultModal(weekIndex, feedback, adjustment) {
           <span>Ajuste aplicado</span>
           <strong>${getAdjustmentPercentLabel(adjustment)}</strong>
         </div>
+        ${feedback.currentWeight ? `
+          <div>
+            <span>Peso atualizado</span>
+            <strong>${feedback.currentWeight} kg</strong>
+          </div>
+        ` : ''}
       </div>
 
       <div class="checkin-feedback-note">
@@ -2955,7 +2994,8 @@ function buildAICheckinPrompt(weekIndex, feedback, localRecommendation) {
       customDistance: userData.customDistance || null,
       raceDate: userData.raceDate || plan?.raceDate || '-',
       daysPerWeek: userData.daysPerWeek || plan?.daysPerWeek || '-',
-      imc: userData.imc || null,
+      imc: feedback.currentIMC || userData.imc || null,
+      currentWeight: feedback.currentWeight || userData.weight || null,
       test3kmTime: userData.test3kmTime || null,
       test3kmPace: userData.test3kmPace || null
     },
@@ -3740,6 +3780,27 @@ document.getElementById('modal-overlay').addEventListener('click', (e) => {
 
 
 // ===== SETTINGS PAGE =====
+function calculateIMCFromValues(weight, height) {
+  const w = Number(weight || 0);
+  const h = Number(height || 0) / 100;
+
+  if (!w || !h) return '';
+
+  return (w / (h * h)).toFixed(1);
+}
+
+function getIMCLabel(imcValue) {
+  const imc = Number(imcValue || 0);
+  if (!imc) return 'IMC';
+
+  if (imc <= 18.5) return 'Abaixo do normal';
+  if (imc <= 24.9) return 'Normal';
+  if (imc <= 29.9) return 'Sobrepeso';
+  if (imc <= 34.9) return 'Obesidade grau I';
+  if (imc <= 39.9) return 'Obesidade grau II';
+  return 'Obesidade grau III';
+}
+
 function getPlanObjective(plan, profile) {
   return plan?.userData?.objective || profile?.goal || 'Não definido';
 }
@@ -3761,13 +3822,60 @@ function updateAvatarElement(el, profile, fallback = 'A') {
   }
 }
 
+function getCurrentAthleteMetrics() {
+  const profile = typeof UserProfileService !== 'undefined' ? UserProfileService.getCurrentProfile() : null;
+  const plan = AICoach.loadPlan ? AICoach.loadPlan() : null;
+  const userData = plan?.userData || {};
+
+  const age = profile?.age || userData.age || '';
+  const height = profile?.height || userData.height || '';
+  const weight = profile?.weight || userData.weight || '';
+  const imc = profile?.imc || userData.imc || calculateIMCFromValues(weight, height);
+
+  return { profile, plan, userData, age, height, weight, imc };
+}
+
+function syncAthleteWeight(weight, source = 'settings') {
+  const { profile, plan, userData, height } = getCurrentAthleteMetrics();
+  const current = StorageService.loadUserProfile?.() || {};
+  const imc = calculateIMCFromValues(weight, height);
+
+  StorageService.saveUserProfile?.({
+    ...current,
+    displayName: current.displayName || profile?.displayName || userData.name || '',
+    age: current.age || userData.age || '',
+    height: current.height || userData.height || '',
+    weight,
+    imc,
+    lastWeightUpdate: new Date().toISOString(),
+    lastWeightSource: source,
+    updatedAt: new Date().toISOString()
+  });
+
+  if (plan) {
+    plan.userData = {
+      ...(plan.userData || {}),
+      weight,
+      imc
+    };
+    plan.updatedAt = new Date().toISOString();
+    StorageService.savePlan(plan);
+
+    if (AICoach.isPlanAdopted()) {
+      applyAdoptedPlan();
+    }
+  }
+
+  return { imc };
+}
+
 function renderSettingsPage() {
   if (typeof StorageService === 'undefined') return;
 
   const profile = typeof UserProfileService !== 'undefined' ? UserProfileService.getCurrentProfile() : null;
   const summary = StorageService.getUserStorageSummary ? StorageService.getUserStorageSummary() : {};
   const plan = AICoach.loadPlan ? AICoach.loadPlan() : null;
-  const userData = plan?.userData || {};
+  const { age, height, weight, imc } = getCurrentAthleteMetrics();
 
   const setText = (id, value) => {
     const el = document.getElementById(id);
@@ -3779,62 +3887,63 @@ function renderSettingsPage() {
     if (el) el.value = value || '';
   };
 
-  updateAvatarElement(document.getElementById('settings-avatar'), profile);
   updateAvatarElement(document.getElementById('settings-photo-preview'), profile);
-
-  setText('settings-display-name', profile?.displayName || 'Atleta');
-  setText('settings-role', profile ? UserProfileService.getRoleLabel(profile.role) : 'Perfil');
-  setText('settings-username', profile?.username || StorageService.getCurrentUser());
-  setText('settings-goal', getPlanObjective(plan, profile));
-  setText('settings-adopted', summary.isAdopted ? 'Sim' : 'Não');
 
   setText('settings-plan-name', plan?.planName || 'Sem plano');
   setText('settings-race-name', plan?.raceName || '-');
   setText('settings-plan-weeks', summary.planWeeks || 0);
   setText('settings-plan-workouts', summary.planWorkouts || 0);
-  setText('settings-checkins', summary.checkinCount || 0);
-  setText('settings-adjustments', summary.adjustmentCount || 0);
   setText('settings-objective-readonly', getPlanObjective(plan, profile));
-  setText('settings-workouts-readonly', summary.planWorkouts || 0);
+  setText('settings-adopted', summary.isAdopted ? 'Adotada' : 'Não adotada');
 
-  setValue('settings-athlete-name', profile?.displayName || userData.name || '');
-  setValue('settings-age', profile?.age || userData.age || '');
-  setValue('settings-height', profile?.height || userData.height || '');
-  setValue('settings-weight', profile?.weight || userData.weight || '');
+  setValue('settings-athlete-name', profile?.displayName || plan?.userData?.name || '');
+  setValue('settings-weight', weight || '');
+  setText('settings-age-readonly', age ? `${age} anos` : '-');
+  setText('settings-height-readonly', height ? `${height} cm` : '-');
+  setText('settings-imc-readonly', imc ? `${imc} • ${getIMCLabel(imc)}` : '-');
 }
 
 function saveAthleteProfileSettings() {
   const current = StorageService.loadUserProfile?.() || {};
+  const { plan, userData } = getCurrentAthleteMetrics();
   const displayName = document.getElementById('settings-athlete-name')?.value.trim() || '';
-  const age = document.getElementById('settings-age')?.value || '';
-  const height = document.getElementById('settings-height')?.value || '';
   const weight = document.getElementById('settings-weight')?.value || '';
 
-  const profile = {
+  const height = current.height || userData.height || '';
+  const age = current.age || userData.age || '';
+  const imc = calculateIMCFromValues(weight, height);
+
+  StorageService.saveUserProfile?.({
     ...current,
     displayName,
     age,
     height,
     weight,
-    updatedAt: new Date().toISOString()
-  };
+    imc,
+    updatedAt: new Date().toISOString(),
+    lastWeightUpdate: weight ? new Date().toISOString() : current.lastWeightUpdate,
+    lastWeightSource: weight ? 'settings' : current.lastWeightSource
+  });
 
-  StorageService.saveUserProfile?.(profile);
+  if (plan) {
+    plan.userData = {
+      ...(plan.userData || {}),
+      name: displayName,
+      weight,
+      imc
+    };
+    plan.updatedAt = new Date().toISOString();
+    StorageService.savePlan(plan);
+  }
+
   updateHeaderUser();
   renderSettingsPage();
+  renderStats();
 
-  // Também preenche o formulário do IA Coach para a próxima geração, sem alterar a planilha atual.
-  const map = [
-    ['ai-name', displayName],
-    ['ai-age', age],
-    ['ai-height', height],
-    ['ai-weight', weight]
-  ];
-
-  map.forEach(([id, value]) => {
-    const el = document.getElementById(id);
-    if (el && value) el.value = value;
-  });
+  const aiName = document.getElementById('ai-name');
+  const aiWeight = document.getElementById('ai-weight');
+  if (aiName && displayName) aiName.value = displayName;
+  if (aiWeight && weight) aiWeight.value = weight;
 
   document.getElementById('modal-icon').textContent = '✅';
   document.getElementById('modal-title').textContent = 'Perfil salvo';
