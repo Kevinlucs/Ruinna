@@ -4192,3 +4192,108 @@ select.ai-input {
     right: 6px;
   }
 }
+
+
+/* ===== STATS / ADAPTIVE POLISH V25 ===== */
+
+/* O antigo "Progresso por Fase" foi removido do HTML.
+   Mantemos estilos de segurança caso algum cache antigo ainda renderize o bloco. */
+.stats-phases.is-hidden,
+#stats-phases:empty {
+  display: none;
+}
+
+/* Caso o bloco de fases volte em versões futuras, as semanas ficam em lista vertical com gráfico horizontal. */
+.stats-phase-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: unset;
+  padding: 12px 0 0;
+  overflow: visible;
+}
+
+.stats-phase-week {
+  display: grid;
+  grid-template-columns: 42px 1fr 74px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.stats-phase-week span {
+  color: var(--accent-light);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.stats-phase-week-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.stats-phase-week-bar i {
+  display: block;
+  height: 100% !important;
+  width: var(--week-progress, 0%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+}
+
+.stats-phase-week small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  writing-mode: initial;
+  transform: none;
+  max-height: none;
+  text-align: right;
+}
+
+/* Feedbacks/ajustes: a partir de poucos itens, ativa rolagem para preservar altura. */
+.adjustment-timeline-compact,
+.evolution-review-card {
+  max-height: 390px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(252, 76, 2, 0.45) rgba(255, 255, 255, 0.06);
+}
+
+/* Modal de feedback: evita estourar a tela em celulares quando a IA escrever mais. */
+.modal-card.checkin-modal-card {
+  max-width: 420px;
+  width: min(420px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card.checkin-modal-card #modal-message {
+  overflow-y: auto;
+  padding-right: 2px;
+  max-height: calc(100dvh - 190px);
+}
+
+.checkin-feedback-modal {
+  gap: 14px;
+}
+
+.checkin-feedback-hero p,
+.checkin-feedback-note p {
+  line-height: 1.42;
+}
+
+@media (max-width: 420px) {
+  .modal-card.checkin-modal-card {
+    width: min(360px, calc(100vw - 24px));
+  }
+
+  .modal-card.checkin-modal-card #modal-message {
+    max-height: calc(100dvh - 180px);
+  }
+}

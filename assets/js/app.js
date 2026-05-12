@@ -527,7 +527,8 @@ function renderStats() {
   }
 
   const el = document.getElementById('stats-phases');
-  el.innerHTML = phases.map(p => {
+  if (el) {
+    el.innerHTML = phases.map(p => {
     const total = getPhaseWorkouts(p.key).length;
     const done = getPhaseCompleted(p.key);
     const kmDone = Math.round(getPhaseWorkouts(p.key).reduce((s, w) => s + getWorkoutCompletedKm(w), 0));
@@ -541,7 +542,7 @@ function renderStats() {
           return `
             <div class="stats-phase-week">
               <span>${w.week}</span>
-              <div class="stats-phase-week-bar"><i style="height:${Math.max(4, Math.min(100, weekProgress))}%"></i></div>
+              <div class="stats-phase-week-bar"><i style="--week-progress:${Math.max(4, Math.min(100, weekProgress))}%"></i></div>
               <small>${Math.round(w.completedKm)}/${Math.round(w.plannedKm)} km</small>
             </div>
           `;
@@ -561,6 +562,7 @@ function renderStats() {
       ${weeksHtml}
     </div>`;
   }).join('');
+  }
 
   renderEvolutionDashboard();
   renderEvolutionHistory();
@@ -2735,6 +2737,7 @@ function showWeeklyCheckinResultModal(weekIndex, feedback, adjustment) {
 
   document.getElementById('modal-icon').textContent = adjustment.source === 'ai' ? '🧠' : '✅';
   document.getElementById('modal-title').textContent = `Feedback da ${weekLabel}`;
+  document.querySelector('.modal-card')?.classList.add('checkin-modal-card');
   document.getElementById('modal-message').innerHTML = `
     <div class="checkin-feedback-modal">
       <div class="checkin-feedback-hero">
@@ -2786,6 +2789,7 @@ function showWeeklyCheckinResultModal(weekIndex, feedback, adjustment) {
   cancelBtn.textContent = 'Ver Stats';
   cancelBtn.onclick = () => {
     document.getElementById('modal-overlay').classList.add('hidden');
+    document.querySelector('.modal-card')?.classList.remove('checkin-modal-card');
     showPage('stats');
   };
 
@@ -2793,6 +2797,7 @@ function showWeeklyCheckinResultModal(weekIndex, feedback, adjustment) {
   confirmBtn.textContent = 'Entendi';
   confirmBtn.onclick = () => {
     document.getElementById('modal-overlay').classList.add('hidden');
+    document.querySelector('.modal-card')?.classList.remove('checkin-modal-card');
     cancelBtn.textContent = 'Cancelar';
   };
 
@@ -2822,9 +2827,9 @@ function getLocalAdjustmentRecommendation(weekIndex, feedback) {
     action = 'reduce';
     reason = 'Esforço alto. Próxima semana reduzida em 10%.';
   } else if (summary.completionRate >= 1 && feedback.effort <= 5 && feedback.feeling === 'leve') {
-    factor = 1.03;
-    action = 'slight_increase';
-    reason = 'Semana leve e completa. Próxima semana recebeu aumento conservador de 3%.';
+    factor = 1;
+    action = 'maintain';
+    reason = 'Semana leve e completa. O plano foi mantido porque a progressão já está prevista nas próximas semanas.';
   }
 
   return {
@@ -2925,7 +2930,9 @@ REGRAS DE SEGURANÇA:
 - Se pain=true, use action "recovery" ou "reduce". Nunca aumente carga.
 - Se averageEffort >= 9, nunca aumente carga.
 - Se completionRate < 60, nunca aumente carga.
-- Aumento máximo permitido: 3%.
+- Aumento adicional máximo permitido: 3%.
+- Não compare rigidamente o volume da próxima semana já planejada com o volume realizado da semana atual para forçar redução.
+- Se a semana foi 100% concluída, com esforço <= 5, sensação leve e sem dor, prefira "maintain"; não recomende "reduce" apenas porque a próxima semana do plano é maior.
 - Redução padrão: 10% a 20%.
 - Seja conservador. Priorize consistência e prevenção de lesão.
 - Retorne somente JSON válido, sem markdown.
@@ -2980,9 +2987,21 @@ function normalizeAICheckinRecommendation(ai, feedback, localRecommendation) {
   const effort = Number(feedback.effort || feedback.summary?.averageEffort || 0);
   const completionRate = Number(feedback.summary?.completionRate || 0);
 
+  const isPerfectLightWeek =
+    !feedback.pain &&
+    completionRate >= 1 &&
+    effort <= 5 &&
+    feedback.feeling === 'leve';
+
   // Guardrails: a IA pode sugerir, mas não passa por cima das regras de segurança.
   if (feedback.pain && action === 'slight_increase') action = 'recovery';
   if ((effort >= 9 || completionRate < 0.6) && action === 'slight_increase') action = localRecommendation.action === 'maintain' ? 'reduce' : localRecommendation.action;
+
+  // Semana perfeita e leve não deve gerar redução automática só porque a semana seguinte já é maior.
+  // Nesse caso, mantemos o plano e deixamos a progressão original trabalhar.
+  if (isPerfectLightWeek && (action === 'reduce' || action === 'recovery')) {
+    action = 'maintain';
+  }
 
   let percent = Math.abs(Number(ai?.adjustmentPercent || 0));
   let factor = 1;
@@ -2996,12 +3015,19 @@ function normalizeAICheckinRecommendation(ai, feedback, localRecommendation) {
   } else if (action === 'slight_increase') {
     percent = percent || 3;
     factor = 1 + clamp(percent, 1, 3) / 100;
+  } else {
+    percent = 0;
+    factor = 1;
   }
 
   const weeksToAdjust = clamp(Number(ai?.weeksToAdjust || localRecommendation.weeksToAdjust || 1), 1, 2);
-  const reason = ai?.reason || localRecommendation.reason;
+  const reason = action === 'maintain'
+    ? 'Semana concluída com segurança. O plano foi mantido sem redução de carga.'
+    : (ai?.reason || localRecommendation.reason);
   const coachTip = ai?.coachTip || '';
-  const messageToUser = ai?.messageToUser || reason;
+  const messageToUser = action === 'maintain'
+    ? 'Boa semana. Vamos manter a progressão planejada sem cortes desnecessários.'
+    : (ai?.messageToUser || reason);
   const message = coachTip ? `${messageToUser} Dica: ${coachTip}` : messageToUser;
 
   return {
@@ -3049,9 +3075,11 @@ async function runSmartPlanAdjustmentEngine(weekIndex, feedback) {
     localFallback: recommendation.source !== 'ai',
     createdAt: new Date().toISOString(),
     title: recommendation.title,
-    message: applied
+    message: recommendation.action === 'maintain'
       ? recommendation.message
-      : 'Check-in salvo. Nenhuma semana futura disponível para ajuste.'
+      : applied
+        ? recommendation.message
+        : 'Check-in salvo. Nenhuma semana futura disponível para ajuste.'
   };
 
   adjustmentHistory.push(adjustment);

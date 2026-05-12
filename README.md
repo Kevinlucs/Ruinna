@@ -218,3 +218,13 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Após adotar o plano, o app redireciona para o Início.
 - Tela de treino ganhou botão “Voltar ao início”.
 - Cache atualizado para `planrun-v24`.
+
+
+## Ajustes de Stats e Adaptive Training - v25
+
+- Removido o bloco antigo "Progresso por Fase" da aba Stats.
+- Feedbacks e ajustes do Adaptive Training agora têm rolagem para preservar altura em telas menores.
+- Regras do check-in ajustadas: semana 100% concluída, leve e sem dor não reduz a próxima semana automaticamente.
+- A IA foi orientada a não cortar carga apenas porque a próxima semana planejada é maior que a semana recém-concluída.
+- Modal de feedback do check-in agora tem altura controlada e scroll interno.
+- Cache atualizado para `planrun-v25`.
