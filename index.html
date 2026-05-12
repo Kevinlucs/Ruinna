@@ -298,6 +298,124 @@
             </div>
         </main>
 
+        <!-- 
+        <!-- SETTINGS PAGE -->
+        <main id="page-settings" class="page">
+            <div class="settings-container">
+                <div class="settings-hero">
+                    <div>
+                        <span class="settings-eyebrow">Perfil do atleta</span>
+                        <h2>Atleta & Conta</h2>
+                        <p>Edite apenas os dados pessoais do atleta. Alterações de treino continuam sendo feitas pelo IA Coach ou pelo editor manual.</p>
+                    </div>
+                    <button class="settings-logout-mobile" onclick="handleLogout()">Sair</button>
+                </div>
+
+                <div class="settings-grid">
+                    <section class="settings-card">
+                        <div class="settings-card-header">
+                            <div>
+                                <span>Perfil logado</span>
+                                <h3>Resumo do perfil</h3>
+                            </div>
+                            <button class="settings-mini-btn" onclick="openUserProfilePanel()">Ver perfil</button>
+                        </div>
+
+                        <div class="settings-profile-row">
+                            <div class="settings-avatar" id="settings-avatar">A</div>
+                            <div>
+                                <strong id="settings-display-name">Atleta</strong>
+                                <span id="settings-role">Perfil</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-info-list">
+                            <div><span>Usuário</span><strong id="settings-username">-</strong></div>
+                            <div><span>Objetivo</span><strong id="settings-goal">-</strong></div>
+                            <div><span>Plano adotado</span><strong id="settings-adopted">-</strong></div>
+                        </div>
+                    </section>
+
+                    <section class="settings-card">
+                        <div class="settings-card-header">
+                            <div>
+                                <span>Plano atual</span>
+                                <h3>Resumo técnico</h3>
+                            </div>
+                            <button class="settings-mini-btn" onclick="showPage('ai')">IA Coach</button>
+                        </div>
+
+                        <div class="settings-plan-grid">
+                            <div><span>Nome</span><strong id="settings-plan-name">Sem plano</strong></div>
+                            <div><span>Prova</span><strong id="settings-race-name">-</strong></div>
+                            <div><span>Semanas</span><strong id="settings-plan-weeks">0</strong></div>
+                            <div><span>Treinos totais</span><strong id="settings-plan-workouts">0</strong></div>
+                            <div><span>Check-ins</span><strong id="settings-checkins">0</strong></div>
+                            <div><span>Ajustes</span><strong id="settings-adjustments">0</strong></div>
+                        </div>
+                    </section>
+
+                    <section class="settings-card wide">
+                        <div class="settings-card-header">
+                            <div>
+                                <span>Dados básicos</span>
+                                <h3>Editar perfil do atleta</h3>
+                            </div>
+                            <span class="settings-note-pill">não altera a planilha</span>
+                        </div>
+
+                        <div class="settings-photo-editor">
+                            <div class="settings-photo-preview" id="settings-photo-preview">A</div>
+                            <div>
+                                <strong>Foto do atleta</strong>
+                                <p>Use uma imagem leve. Ela fica salva apenas neste navegador para o usuário logado.</p>
+                                <div class="settings-photo-actions">
+                                    <label class="settings-mini-btn">
+                                        Escolher foto
+                                        <input type="file" id="settings-photo-input" accept="image/*" onchange="handleProfilePhotoUpload(this)" hidden>
+                                    </label>
+                                    <button class="settings-mini-btn ghost" onclick="removeProfilePhoto()">Remover</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-form-grid">
+                            <label>
+                                Nome do atleta
+                                <input type="text" id="settings-athlete-name" class="settings-input" placeholder="Nome">
+                            </label>
+                            <label>
+                                Idade
+                                <input type="number" id="settings-age" class="settings-input" placeholder="25" min="10" max="99">
+                            </label>
+                            <label>
+                                Altura (cm)
+                                <input type="number" id="settings-height" class="settings-input" placeholder="175" min="100" max="250">
+                            </label>
+                            <label>
+                                Peso (kg)
+                                <input type="number" id="settings-weight" class="settings-input" placeholder="70" min="30" max="250" step="0.1">
+                            </label>
+                        </div>
+
+                        <div class="settings-readonly-grid">
+                            <div><span>Objetivo atual</span><strong id="settings-objective-readonly">Não definido</strong></div>
+                            <div><span>Quantidade de treinos</span><strong id="settings-workouts-readonly">0</strong></div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn btn-secondary" onclick="renderSettingsPage()">Restaurar</button>
+                            <button class="btn btn-primary" onclick="saveAthleteProfileSettings()">Salvar perfil</button>
+                        </div>
+
+                        <p class="settings-help">
+                            Esses dados ajudam a preencher o IA Coach e personalizar a conta. Eles não recalculam semanas, volumes, paces ou treinos.
+                        </p>
+                    </section>
+                </div>
+            </div>
+        </main>
+
         <!-- AI COACH PAGE -->
         <main id="page-ai" class="page">
             <div class="ai-container">
@@ -541,6 +659,15 @@
                     <line x1="6" y1="20" x2="6" y2="14"></line>
                 </svg>
                 <span>Stats</span>
+            </button>
+
+            <button class="nav-item" data-page="settings" id="nav-settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.39 1.08V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.08-.39H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6A1.65 1.65 0 0 0 10.4 3V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.34.33.65.6 1 .27.35.68.6 1.08.6H21a2 2 0 1 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"></path>
+                </svg>
+                <span>Ajustes</span>
             </button>
             <button class="nav-item" data-page="ai" id="nav-ai">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

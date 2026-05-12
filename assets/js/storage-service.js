@@ -95,6 +95,7 @@ const StorageService = (() => {
       workoutFeedback: userKey('workout_feedback', user),
       weeklyCheckins: userKey('weekly_checkins', user),
       adjustmentHistory: userKey('adjustment_history', user),
+      userProfile: userKey('user_profile', user),
       plan: userKey('ai_plan', user),
       adopted: userKey('ai_adopted', user),
       legacyCompleted: legacyKey('completed'),
@@ -114,6 +115,15 @@ const StorageService = (() => {
   function logout() {
     removeRaw(`${APP}_logged_in`);
     removeRaw(`${APP}_current_user`);
+  }
+
+
+  function loadUserProfile() {
+    return getJSON(getKeys().userProfile, {}) || {};
+  }
+
+  function saveUserProfile(value) {
+    return setJSON(getKeys().userProfile, value || {});
   }
 
   function loadCompletedWorkouts() {
@@ -191,6 +201,19 @@ const StorageService = (() => {
     saveAdjustmentHistory([]);
   }
 
+
+  function clearCurrentUserData() {
+    const keys = getKeys();
+    removeRaw(keys.completed);
+    removeRaw(keys.custom);
+    removeRaw(keys.workoutFeedback);
+    removeRaw(keys.weeklyCheckins);
+    removeRaw(keys.adjustmentHistory);
+    removeRaw(keys.plan);
+    removeRaw(keys.adopted);
+    return true;
+  }
+
   function getUserSnapshot() {
   
   function getUserStorageSummary() {
@@ -223,7 +246,8 @@ const StorageService = (() => {
       customizations: loadCustomizations(),
       workoutFeedback: loadWorkoutFeedback(),
       weeklyCheckins: loadWeeklyCheckins(),
-      adjustmentHistory: loadAdjustmentHistory()
+      adjustmentHistory: loadAdjustmentHistory(),
+      userProfile: loadUserProfile()
     };
   }
 
@@ -235,6 +259,7 @@ const StorageService = (() => {
     saveWorkoutFeedback(payload.workoutFeedback || {});
     saveWeeklyCheckins(payload.weeklyCheckins || {});
     saveAdjustmentHistory(payload.adjustmentHistory || []);
+    saveUserProfile(payload.userProfile || {});
     return true;
   }
 
@@ -272,6 +297,8 @@ const StorageService = (() => {
     getRaw,
     setRaw,
     removeRaw,
+    loadUserProfile,
+    saveUserProfile,
     loadCompletedWorkouts,
     saveCompletedWorkouts,
     loadCustomizations,
@@ -288,6 +315,7 @@ const StorageService = (() => {
     isPlanAdopted,
     setPlanAdopted,
     clearAdaptiveData,
+    clearCurrentUserData,
     getUserSnapshot,
     getUserStorageSummary,
     applyUserSnapshot

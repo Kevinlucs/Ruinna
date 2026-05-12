@@ -285,3 +285,23 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Header agora usa flex layout consistente para perfil, km total e botão sair.
 - Mobile preservado com avatar compacto.
 - Cache atualizado para `planrun-v31`.
+
+
+## Settings Page - v32
+
+- Adicionada aba “Ajustes”.
+- Nova tela “Atleta & Plano” com perfil logado, resumo do plano e preferências base.
+- Permite editar nome, objetivo, dias por semana e data da prova nos metadados do plano.
+- Adicionada ação para limpar dados locais somente do usuário logado.
+- Bottom navigation ajustada para 5 itens.
+- Cache atualizado para `planrun-v32`.
+
+
+## Ajustes: perfil sem alterar planilha - v33
+
+- A aba Ajustes agora edita apenas dados básicos do atleta.
+- Removida edição de dias por semana e data da prova nessa tela.
+- Objetivo e quantidade de treinos ficaram somente como leitura/resumo.
+- Adicionado upload/remover foto do atleta, salvo localmente por usuário.
+- Dados do perfil ajudam a preencher o IA Coach, mas não recalculam a planilha ativa.
+- Cache atualizado para `planrun-v33`.

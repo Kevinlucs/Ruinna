@@ -1802,6 +1802,11 @@ function showPage(page) {
     backBtn.classList.add('hidden');
   }
   currentPage = page;
+
+  if (page === 'settings') {
+    renderSettingsPage();
+  }
+
   window.scrollTo(0, 0);
 }
 
@@ -3733,6 +3738,154 @@ document.getElementById('modal-overlay').addEventListener('click', (e) => {
 });
 
 
+
+// ===== SETTINGS PAGE =====
+function getPlanObjective(plan, profile) {
+  return plan?.userData?.objective || profile?.goal || 'Não definido';
+}
+
+function updateAvatarElement(el, profile, fallback = 'A') {
+  if (!el) return;
+
+  const photo = profile?.photo || '';
+  const label = profile?.avatar || profile?.displayName?.charAt(0)?.toUpperCase() || fallback;
+
+  if (photo) {
+    el.textContent = '';
+    el.style.backgroundImage = `url("${photo}")`;
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+  } else {
+    el.style.backgroundImage = '';
+    el.textContent = label;
+  }
+}
+
+function renderSettingsPage() {
+  if (typeof StorageService === 'undefined') return;
+
+  const profile = typeof UserProfileService !== 'undefined' ? UserProfileService.getCurrentProfile() : null;
+  const summary = StorageService.getUserStorageSummary ? StorageService.getUserStorageSummary() : {};
+  const plan = AICoach.loadPlan ? AICoach.loadPlan() : null;
+  const userData = plan?.userData || {};
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+
+  const setValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value || '';
+  };
+
+  updateAvatarElement(document.getElementById('settings-avatar'), profile);
+  updateAvatarElement(document.getElementById('settings-photo-preview'), profile);
+
+  setText('settings-display-name', profile?.displayName || 'Atleta');
+  setText('settings-role', profile ? UserProfileService.getRoleLabel(profile.role) : 'Perfil');
+  setText('settings-username', profile?.username || StorageService.getCurrentUser());
+  setText('settings-goal', getPlanObjective(plan, profile));
+  setText('settings-adopted', summary.isAdopted ? 'Sim' : 'Não');
+
+  setText('settings-plan-name', plan?.planName || 'Sem plano');
+  setText('settings-race-name', plan?.raceName || '-');
+  setText('settings-plan-weeks', summary.planWeeks || 0);
+  setText('settings-plan-workouts', summary.planWorkouts || 0);
+  setText('settings-checkins', summary.checkinCount || 0);
+  setText('settings-adjustments', summary.adjustmentCount || 0);
+  setText('settings-objective-readonly', getPlanObjective(plan, profile));
+  setText('settings-workouts-readonly', summary.planWorkouts || 0);
+
+  setValue('settings-athlete-name', profile?.displayName || userData.name || '');
+  setValue('settings-age', profile?.age || userData.age || '');
+  setValue('settings-height', profile?.height || userData.height || '');
+  setValue('settings-weight', profile?.weight || userData.weight || '');
+}
+
+function saveAthleteProfileSettings() {
+  const current = StorageService.loadUserProfile?.() || {};
+  const displayName = document.getElementById('settings-athlete-name')?.value.trim() || '';
+  const age = document.getElementById('settings-age')?.value || '';
+  const height = document.getElementById('settings-height')?.value || '';
+  const weight = document.getElementById('settings-weight')?.value || '';
+
+  const profile = {
+    ...current,
+    displayName,
+    age,
+    height,
+    weight,
+    updatedAt: new Date().toISOString()
+  };
+
+  StorageService.saveUserProfile?.(profile);
+  updateHeaderUser();
+  renderSettingsPage();
+
+  // Também preenche o formulário do IA Coach para a próxima geração, sem alterar a planilha atual.
+  const map = [
+    ['ai-name', displayName],
+    ['ai-age', age],
+    ['ai-height', height],
+    ['ai-weight', weight]
+  ];
+
+  map.forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el && value) el.value = value;
+  });
+
+  document.getElementById('modal-icon').textContent = '✅';
+  document.getElementById('modal-title').textContent = 'Perfil salvo';
+  document.getElementById('modal-message').textContent = 'Dados do atleta atualizados. A planilha não foi alterada.';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-cancel').classList.add('hidden');
+  document.getElementById('modal-confirm').textContent = 'Fechar';
+  document.getElementById('modal-confirm').onclick = () => {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    document.getElementById('modal-cancel').classList.remove('hidden');
+  };
+}
+
+function handleProfilePhotoUpload(input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    alert('Selecione uma imagem válida.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const current = StorageService.loadUserProfile?.() || {};
+    StorageService.saveUserProfile?.({
+      ...current,
+      photo: reader.result,
+      updatedAt: new Date().toISOString()
+    });
+
+    updateHeaderUser();
+    renderSettingsPage();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function removeProfilePhoto() {
+  const current = StorageService.loadUserProfile?.() || {};
+  delete current.photo;
+  StorageService.saveUserProfile?.({
+    ...current,
+    updatedAt: new Date().toISOString()
+  });
+
+  updateHeaderUser();
+  renderSettingsPage();
+}
+
+
 // ===== USER PROFILE MANAGER =====
 function updateHeaderUser() {
   if (typeof UserProfileService === 'undefined' || typeof StorageService === 'undefined') return;
@@ -3743,13 +3896,13 @@ function updateHeaderUser() {
   const roleEl = document.getElementById('header-user-role');
 
   if (!profile) {
-    if (avatarEl) avatarEl.textContent = 'A';
+    updateAvatarElement(avatarEl, null);
     if (nameEl) nameEl.textContent = 'Atleta';
     if (roleEl) roleEl.textContent = 'Perfil';
     return;
   }
 
-  if (avatarEl) avatarEl.textContent = profile.avatar || profile.displayName.charAt(0).toUpperCase();
+  updateAvatarElement(avatarEl, profile);
   if (nameEl) nameEl.textContent = profile.displayName || profile.username;
   if (roleEl) roleEl.textContent = UserProfileService.getRoleLabel(profile.role);
 }
@@ -3767,7 +3920,7 @@ function openUserProfilePanel() {
   document.getElementById('modal-message').innerHTML = `
     <div class="profile-manager-card">
       <div class="profile-manager-head">
-        <div class="profile-manager-avatar">${escapeHTML(profile.avatar || 'A')}</div>
+        <div class="profile-manager-avatar ${profile.photo ? 'has-photo' : ''}" ${profile.photo ? `style="background-image:url('${profile.photo}')"` : ''}>${profile.photo ? '' : escapeHTML(profile.avatar || 'A')}</div>
         <div>
           <strong>${escapeHTML(profile.displayName)}</strong>
           <span>${escapeHTML(UserProfileService.getRoleLabel(profile.role))} • ${escapeHTML(profile.username)}</span>

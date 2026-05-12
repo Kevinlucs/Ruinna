@@ -34,14 +34,25 @@ const UserProfileService = (() => {
 
     if (!profile) return null;
 
+    const localProfile = (typeof StorageService !== 'undefined' && StorageService.getCurrentUser?.() === user)
+      ? StorageService.loadUserProfile?.() || {}
+      : {};
+
+    const displayName = localProfile.displayName || profile.displayName || user;
+
     return {
       username: user,
-      displayName: profile.displayName || user,
+      displayName,
       role: profile.role || 'runner',
       goal: profile.goal || '',
-      avatar: profile.avatar || String(profile.displayName || user).charAt(0).toUpperCase(),
+      avatar: localProfile.avatar || profile.avatar || String(displayName || user).charAt(0).toUpperCase(),
+      photo: localProfile.photo || '',
+      age: localProfile.age || '',
+      height: localProfile.height || '',
+      weight: localProfile.weight || '',
       team: profile.team || 'PlanRun',
-      notes: profile.notes || ''
+      notes: profile.notes || '',
+      localProfile
     };
   }
 
