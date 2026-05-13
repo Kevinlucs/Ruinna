@@ -84,9 +84,9 @@
                         <small id="header-user-role">Perfil</small>
                     </span>
                 </button>
-                <div id="header-stats" class="header-stats">
-                    <span id="total-km" class="stat-km">0 km</span>
-                </div>
+                <button id="header-tour-help" class="header-tour-help" onclick="confirmReplayTour()" title="Rever tour do app" aria-label="Rever tour do app">
+                    ?
+                </button>
                 <button class="header-logout-btn" onclick="handleLogout()" title="Sair">Sair</button>
             </div>
         </header>
@@ -686,14 +686,17 @@
                 </svg>
                 <span>Estatísticas</span>
             </button>
-            <button class="nav-item" data-page="settings" id="nav-settings">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21a8 8 0 0 0-16 0"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span>Perfil</span>
-            </button>
+            <div class="nav-item-wrap nav-profile-wrap">
+                <button class="nav-item" data-page="settings" id="nav-settings">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21a8 8 0 0 0-16 0"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>Perfil</span>
+                </button>
+                <button type="button" class="nav-tour-help" onclick="event.stopPropagation(); confirmReplayTour();" aria-label="Rever tour do app" title="Rever tour do app">?</button>
+            </div>
         </nav>
     </div>
 

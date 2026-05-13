@@ -403,3 +403,13 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Logout agora oculta o app de forma explícita e reseta navegação para Início.
 - Login limpa o display inline e restaura o app corretamente.
 - Cache atualizado para `ruinna-v42`.
+
+
+## Botão de tour recorrente - v43
+
+- Removido contador de KM do header na versão web.
+- Adicionado botão `?` no header desktop para rever o tour.
+- Adicionado botão `?` ao lado do ícone Perfil na bottom nav mobile.
+- O tour agora pode ser revisitado a qualquer momento, não apenas no primeiro login.
+- Texto do Perfil no tour ajustado para explicar peso/IMC e análise da IA.
+- Cache atualizado para `ruinna-v43`.

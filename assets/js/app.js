@@ -1801,9 +1801,12 @@ function showSimpleModal(icon, title, message) {
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .nav-item-wrap').forEach(n => n.classList.remove('active'));
   const navBtn = document.querySelector(`.nav-item[data-page="${page}"]`);
-  if (navBtn) navBtn.classList.add('active');
+  if (navBtn) {
+    navBtn.classList.add('active');
+    navBtn.closest('.nav-item-wrap')?.classList.add('active');
+  }
   const backBtn = document.getElementById('btn-back');
   if (page === 'phase-detail' || page === 'workout') {
     backBtn.classList.remove('hidden');
@@ -4104,7 +4107,7 @@ function handleLogout() {
 
   document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
   document.getElementById('page-home')?.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .nav-item-wrap').forEach(nav => nav.classList.remove('active'));
   document.getElementById('nav-home')?.classList.add('active');
 
   if (appEl) {
@@ -4185,7 +4188,7 @@ const RUINNA_TOUR_STEPS = [
     page: 'settings',
     icon: '👤',
     title: 'Perfil',
-    text: 'No Perfil você atualiza nome e foto. O peso é solicitado automaticamente a cada 4 semanas no check-in.'
+    text: 'No Perfil você atualiza nome e foto. O peso é solicitado no check-in a cada 4 semanas para recalcular IMC e melhorar a análise da IA.'
   }
 ];
 
@@ -4237,6 +4240,35 @@ function finishOnboardingTour() {
   showPage('home');
   renderHome();
 }
+
+
+function replayOnboardingTour() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  renderTourStep(0);
+}
+
+function confirmReplayTour() {
+  document.getElementById('modal-icon').textContent = '❔';
+  document.getElementById('modal-title').textContent = 'Rever tour do RUINNA?';
+  document.getElementById('modal-message').innerHTML = `
+    <div class="tour-card">
+      <p>Deseja rever a apresentação rápida do app? O tour mostra como usar Início, IA Coach, Treinos, Estatísticas e Perfil.</p>
+    </div>
+  `;
+
+  const cancelBtn = document.getElementById('modal-cancel');
+  const confirmBtn = document.getElementById('modal-confirm');
+
+  cancelBtn.classList.remove('hidden');
+  cancelBtn.textContent = 'Agora não';
+  confirmBtn.textContent = 'Rever tour';
+
+  cancelBtn.onclick = () => document.getElementById('modal-overlay').classList.add('hidden');
+  confirmBtn.onclick = () => replayOnboardingTour();
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
 
 function maybeStartOnboardingTour() {
   if (StorageService.hasSeenOnboardingTour?.()) return;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruinna-v42';
+const CACHE_NAME = 'ruinna-v43';
 const ASSETS = [
   './',
   './index.html',

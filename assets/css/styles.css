@@ -6029,3 +6029,109 @@ input[type="date"].ai-input {
 .login-screen:not(.hidden) {
   display: flex !important;
 }
+
+
+/* ===== TOUR HELP ACCESS V43 ===== */
+/* Substitui o contador de KM do header por um botão de ajuda/tour no desktop. */
+.header-tour-help {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(252, 76, 2, 0.35);
+  background: rgba(252, 76, 2, 0.10);
+  color: var(--accent-light);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.header-tour-help:hover {
+  background: rgba(252, 76, 2, 0.18);
+  border-color: rgba(252, 76, 2, 0.55);
+}
+
+.header-tour-help:active {
+  transform: scale(0.94);
+}
+
+/* Wrapper do item Perfil para permitir o botão ? ao lado no mobile sem criar uma sexta aba. */
+.nav-item-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--nav-height) - var(--safe-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-item-wrap > .nav-item {
+  height: 100%;
+}
+
+.nav-item-wrap.active .nav-item {
+  color: var(--accent);
+}
+
+.nav-item-wrap.active .nav-item svg {
+  stroke: var(--accent);
+}
+
+.nav-tour-help {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  border: 1px solid rgba(252, 76, 2, 0.40);
+  background: rgba(252, 76, 2, 0.13);
+  color: var(--accent-light);
+  font-size: 0.72rem;
+  font-weight: 900;
+  font-family: 'Outfit', sans-serif;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.nav-tour-help:active {
+  transform: scale(0.9);
+}
+
+@media (min-width: 768px) {
+  .nav-tour-help {
+    display: none;
+  }
+
+  .header-tour-help {
+    display: inline-grid;
+  }
+}
+
+@media (max-width: 767px) {
+  .header-tour-help {
+    display: none !important;
+  }
+
+  .nav-tour-help {
+    display: grid;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-tour-help {
+    right: 5px;
+    top: 4px;
+    width: 18px;
+    height: 18px;
+    font-size: 0.68rem;
+  }
+}
