@@ -449,3 +449,12 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Mensagens de erro da IA ficaram mais profissionais e orientadas à ação.
 - Adicionado resumo prévio durante a geração: prova, semanas, treinos por semana, nível e objetivo.
 - Cache atualizado para `ruinna-v47`.
+
+
+## Correção crítica: adotar planilha - v48
+
+- Corrigido bug em `handleAdoptPlan()` causado por variáveis antigas de modal de treino (`isComplete`/`isPartial`).
+- Botão de confirmação agora mostra “Adotar planilha”.
+- Adição de validação para garantir que existe uma planilha salva antes de adotar.
+- Adotação agora trata erro e exibe feedback ao usuário.
+- Cache atualizado para `ruinna-v48`.
