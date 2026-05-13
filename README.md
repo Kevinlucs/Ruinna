@@ -458,3 +458,12 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Adição de validação para garantir que existe uma planilha salva antes de adotar.
 - Adotação agora trata erro e exibe feedback ao usuário.
 - Cache atualizado para `ruinna-v48`.
+
+
+## Cache guard - v49
+
+- Adicionado marcador `RUINNA_BUILD_VERSION = v49-cache-guard` no console.
+- Service Worker atualizado para `ruinna-v49`.
+- Registro do service worker agora chama `registration.update()`.
+- Confirmado que o bug antigo `isComplete/isPartial` não existe mais no `handleAdoptPlan()`.
+- Esta versão serve para evitar confusão com cache antigo do navegador/PWA.

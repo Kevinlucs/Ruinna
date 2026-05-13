@@ -1,3 +1,6 @@
+const RUINNA_BUILD_VERSION = 'v49-cache-guard';
+console.info('RUINNA build carregado:', RUINNA_BUILD_VERSION);
+
 // ===== DADOS DOS TREINOS =====
 let RACE_DATE = new Date(2026, 9, 17); // Sábado S24
 let START_DATE = new Date(2026, 4, 5); // S1 Terça
@@ -2574,34 +2577,63 @@ function toggleAIWeek(index) {
 }
 
 function handleAdoptPlan() {
-  document.getElementById('modal-icon').textContent = '✅';
-  document.getElementById('modal-title').textContent = 'Adotar Este Plano?';
-  document.getElementById('modal-message').textContent =
-    'Seu plano atual será substituído pelo plano gerado pela IA. Todos os treinos concluídos serão zerados.';
+  const plan = AICoach.loadPlan();
+
+  if (!plan) {
+    showSimpleModal('⚠️', 'Nenhuma planilha encontrada', 'Gere uma planilha com a IA antes de tentar adotar.');
+    return;
+  }
+
+  const modal = document.getElementById('modal-overlay');
   const cancelBtn = document.getElementById('modal-cancel');
   const confirmBtn = document.getElementById('modal-confirm');
 
-  cancelBtn.textContent = 'Fechar';
-  cancelBtn.classList.remove('hidden');
-  confirmBtn.textContent = isComplete ? 'Concluir' : isPartial ? 'Salvar parcial' : 'Registrar';
-  confirmBtn.disabled = false;
+  document.getElementById('modal-icon').textContent = '✅';
+  document.getElementById('modal-title').textContent = 'Adotar esta planilha?';
+  document.getElementById('modal-message').innerHTML = `
+    <p>Seu plano atual será substituído pela planilha gerada pela IA.</p>
+    <p><strong>${escapeHTML(plan.planName || plan.raceName || 'Planilha RUINNA')}</strong></p>
+    <p>O progresso de treinos concluídos será zerado para iniciar a nova jornada.</p>
+  `;
 
-  document.getElementById('modal-overlay').classList.remove('hidden');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.classList.remove('hidden');
+  cancelBtn.disabled = false;
+  cancelBtn.dataset.action = '';
+  cancelBtn.onclick = () => modal.classList.add('hidden');
+
+  confirmBtn.textContent = 'Adotar planilha';
+  confirmBtn.disabled = false;
+  confirmBtn.dataset.action = '';
   confirmBtn.onclick = () => {
-    AICoach.adoptPlan();
-    clearProgress();
-    document.getElementById('modal-overlay').classList.add('hidden');
-    applyAdoptedPlan();
-    updateAdoptedBanner();
-    pageHistory.length = 0;
-    showPage('home');
-    renderHome();
-    renderPhases();
-    renderStats();
+    try {
+      const adopted = AICoach.adoptPlan();
+
+      if (!adopted) {
+        showSimpleModal('⚠️', 'Não foi possível adotar', 'A planilha gerada não foi encontrada. Gere novamente e tente outra vez.');
+        return;
+      }
+
+      clearProgress();
+      modal.classList.add('hidden');
+
+      applyAdoptedPlan();
+      updateAdoptedBanner();
+      pageHistory.length = 0;
+
+      showPage('home');
+      renderHome();
+      renderPhases();
+      renderStats();
+
+      showToast('Planilha adotada com sucesso.', 'success');
+    } catch (error) {
+      console.error('Erro ao adotar planilha:', error);
+      showSimpleModal('⚠️', 'Erro ao adotar', 'Não foi possível adotar a planilha agora. Recarregue a página e tente novamente.');
+    }
   };
-  document.getElementById('modal-cancel').onclick = () => {
-    document.getElementById('modal-overlay').classList.add('hidden');
-  };
+
+  modal.classList.remove('hidden');
 }
 
 function handleUnadoptPlan() {
