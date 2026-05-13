@@ -6135,3 +6135,40 @@ input[type="date"].ai-input {
     font-size: 0.68rem;
   }
 }
+
+
+/* ===== TOUR HELP MOBILE POSITION + REPLAY FIX V44 ===== */
+/* O botão ? segue o padrão web: fica no header, ao lado do perfil, também no mobile. */
+@media (max-width: 767px) {
+  .header-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .header-tour-help {
+    display: inline-grid !important;
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+    order: 2;
+  }
+
+  .header-user-profile {
+    order: 1;
+  }
+
+  .nav-tour-help {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .header-tour-help {
+    display: inline-grid !important;
+  }
+
+  .nav-tour-help {
+    display: none !important;
+  }
+}

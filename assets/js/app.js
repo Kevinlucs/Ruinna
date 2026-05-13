@@ -4221,7 +4221,10 @@ function renderTourStep(index = 0) {
   const confirmBtn = document.getElementById('modal-confirm');
 
   cancelBtn.classList.remove('hidden');
+  cancelBtn.disabled = false;
   cancelBtn.textContent = 'Pular';
+
+  confirmBtn.disabled = false;
   confirmBtn.textContent = isLast ? 'Começar' : 'Próximo';
 
   cancelBtn.onclick = () => finishOnboardingTour();
@@ -4243,11 +4246,31 @@ function finishOnboardingTour() {
 
 
 function replayOnboardingTour() {
-  document.getElementById('modal-overlay').classList.add('hidden');
-  renderTourStep(0);
+  const modal = document.getElementById('modal-overlay');
+  const confirmBtn = document.getElementById('modal-confirm');
+  const cancelBtn = document.getElementById('modal-cancel');
+
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Próximo';
+  }
+
+  if (cancelBtn) {
+    cancelBtn.disabled = false;
+    cancelBtn.classList.remove('hidden');
+  }
+
+  if (modal) modal.classList.add('hidden');
+
+  // Aguarda o fechamento do modal de confirmação para abrir o primeiro passo.
+  setTimeout(() => renderTourStep(0), 80);
 }
 
-function confirmReplayTour() {
+function confirmReplayTour(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   document.getElementById('modal-icon').textContent = '❔';
   document.getElementById('modal-title').textContent = 'Rever tour do RUINNA?';
   document.getElementById('modal-message').innerHTML = `
@@ -4260,11 +4283,14 @@ function confirmReplayTour() {
   const confirmBtn = document.getElementById('modal-confirm');
 
   cancelBtn.classList.remove('hidden');
+  cancelBtn.disabled = false;
   cancelBtn.textContent = 'Agora não';
+
+  confirmBtn.disabled = false;
   confirmBtn.textContent = 'Rever tour';
 
   cancelBtn.onclick = () => document.getElementById('modal-overlay').classList.add('hidden');
-  confirmBtn.onclick = () => replayOnboardingTour();
+  confirmBtn.onclick = (event) => replayOnboardingTour(event);
 
   document.getElementById('modal-overlay').classList.remove('hidden');
 }

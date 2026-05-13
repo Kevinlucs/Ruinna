@@ -413,3 +413,12 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - O tour agora pode ser revisitado a qualquer momento, não apenas no primeiro login.
 - Texto do Perfil no tour ajustado para explicar peso/IMC e análise da IA.
 - Cache atualizado para `ruinna-v43`.
+
+
+## Ajuste do botão de tour - v44
+
+- No mobile, o botão `?` agora segue o padrão da web e fica no header ao lado do perfil.
+- Removido o botão `?` da bottom navigation mobile.
+- Corrigido fluxo do botão “Rever tour” para abrir a apresentação corretamente após confirmação.
+- Botões do modal do tour agora são resetados antes de cada etapa.
+- Cache atualizado para `ruinna-v44`.
