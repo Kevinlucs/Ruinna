@@ -490,3 +490,13 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Limite de descrição ampliado de 120 para 650 caracteres.
 - Prompt da IA reforçado para estratégia com linguagem de treinador.
 - Cache atualizado para `ruinna-v51`.
+
+
+## UI da descrição do treino - v52
+
+- Descrição do treino deixou de aparecer como parágrafo único.
+- Criado layout estruturado por etapas: estrutura, aquecimento, bloco principal, recuperação, desaquecimento e controle.
+- Distâncias, paces e repetições agora recebem destaque visual.
+- Layout responsivo em grid no desktop e empilhado no mobile.
+- Semana de recuperação ganhou alerta visual próprio.
+- Cache atualizado para `ruinna-v52`.

@@ -416,6 +416,81 @@ function renderPhaseDetail(phase) {
   list.innerHTML = html;
 }
 
+
+function splitWorkoutDescription(desc = '') {
+  const raw = String(desc || '').trim();
+  if (!raw) return [];
+
+  // Quebra por pontos finais e ponto-e-vírgula, mantendo textos úteis.
+  return raw
+    .replace(/\s+/g, ' ')
+    .split(/;\s*|(?<=\.)\s+/)
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function getWorkoutDescriptionStepMeta(text = '', index = 0) {
+  const lower = text.toLowerCase();
+
+  if (lower.includes('estrutura')) return { icon: '🧭', label: 'Estrutura' };
+  if (lower.includes('aquecimento')) return { icon: '🔥', label: 'Aquecimento' };
+  if (lower.includes('alternar') || lower.includes('repeti') || lower.includes('tiro') || lower.includes('forte')) return { icon: '⚡', label: 'Bloco principal' };
+  if (lower.includes('recuper')) return { icon: '♻️', label: 'Recuperação' };
+  if (lower.includes('desaquec')) return { icon: '🧊', label: 'Desaquecimento' };
+  if (lower.includes('controle') || lower.includes('objetivo') || lower.includes('prioridade') || lower.includes('evitar')) return { icon: '🎯', label: 'Controle' };
+  if (lower.includes('ritmo') || lower.includes('pace')) return { icon: '⏱️', label: 'Ritmo' };
+
+  return { icon: ['📌', '✅', '➡️', '💡'][index % 4], label: `Etapa ${index + 1}` };
+}
+
+function highlightWorkoutDescriptionText(text = '') {
+  return escapeHTML(text)
+    .replace(/(\d+(?:[,.]\d+)?\s?km)/gi, '<strong class="desc-highlight km">$1</strong>')
+    .replace(/(\d{1,2}:\d{2}\/km(?:-\d{1,2}:\d{2}\/km)?)/gi, '<strong class="desc-highlight pace">$1</strong>')
+    .replace(/(\d+\s?x\s?\d+\s?m|\d+\s?x\s?\d+(?:[,.]\d+)?\s?km)/gi, '<strong class="desc-highlight rep">$1</strong>')
+    .replace(/(\d+\s?m)/gi, '<strong class="desc-highlight km">$1</strong>');
+}
+
+function renderWorkoutDescriptionHTML(desc = '', isRecoveryWeek = false) {
+  const steps = splitWorkoutDescription(desc);
+
+  if (!steps.length) {
+    return `
+      <div class="desc-empty">
+        <span>📝</span>
+        <p>Descrição ainda não preenchida para este treino.</p>
+      </div>
+    `;
+  }
+
+  const stepCards = steps.map((step, index) => {
+    const meta = getWorkoutDescriptionStepMeta(step, index);
+
+    return `
+      <div class="desc-step">
+        <div class="desc-step-icon">${meta.icon}</div>
+        <div class="desc-step-content">
+          <span>${meta.label}</span>
+          <p>${highlightWorkoutDescriptionText(step)}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="desc-structured">
+      ${stepCards}
+      ${isRecoveryWeek ? `
+        <div class="desc-warning">
+          <strong>⚠️ Semana de recuperação</strong>
+          <p>Respeite o descanso e reduza a intensidade caso perceba fadiga acumulada.</p>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+
 function renderWorkoutDetail(id) {
   const w = allWorkouts.find(x => x.id === id);
   if (!w) return;
@@ -447,10 +522,15 @@ function renderWorkoutDetail(id) {
       </div>
       <small>Altere, adicione ou remova treinos do plano ativo. As mudanças aparecem no app, PDF, XLS e backup.</small>
     </div>
-    <div class="wd-description" id="wd-desc-block">
-      <button class="btn-edit-inline" onclick="startEditDesc('${w.id}')">✏️ Editar descrição</button>
-      <h3>Descrição do Treino</h3>
-      <p>${desc}${w.off ? '<br><br>⚠️ <strong>Semana de recuperação</strong> — respeite o descanso!' : ''}</p>
+    <div class="wd-description wd-description-pro" id="wd-desc-block">
+      <div class="wd-desc-header">
+        <div>
+          <span class="wd-desc-eyebrow">Como executar</span>
+          <h3>Descrição do treino</h3>
+        </div>
+        <button class="btn-edit-inline" onclick="startEditDesc('${w.id}')">✏️ Editar descrição</button>
+      </div>
+      ${renderWorkoutDescriptionHTML(desc, w.off)}
     </div>
     ${w.nutrition ? `
     <div class="wd-nutrition">
