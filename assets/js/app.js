@@ -2151,6 +2151,14 @@ function showPage(page) {
     renderSettingsPage();
   }
 
+  if (page === 'shoes') {
+    renderShoesPage();
+  }
+
+  if (page === 'general-settings') {
+    renderGeneralSettingsPage();
+  }
+
   window.scrollTo(0, 0);
 }
 
@@ -3204,6 +3212,7 @@ function openWorkoutFeedbackModal(id, status) {
             <input type="text" class="edit-field" id="feedback-pace" placeholder="Ex: 6:20/km">
           </label>
         </div>
+        ${renderShoeSelectHTML(status)}
       ` : `
         <div class="skip-info-box pro">
           <strong>Treino pulado registrado</strong>
@@ -3232,14 +3241,20 @@ function openWorkoutFeedbackModal(id, status) {
     const completedPace = document.getElementById('feedback-pace')?.value?.trim() || '';
     const effort = Number(document.getElementById('feedback-effort')?.value || 0);
     const notes = document.getElementById('feedback-notes')?.value?.trim() || '';
+    const shoeId = document.getElementById('feedback-shoe')?.value || '';
 
     setWorkoutStatus(id, status, {
       completedAt: new Date().toISOString(),
       completedKm,
       completedPace,
       effort,
-      notes
+      notes,
+      shoeId
     });
+
+    if (status === 'completed' && shoeId) {
+      addKmToShoe(shoeId, completedKm);
+    }
 
     document.getElementById('modal-overlay').classList.add('hidden');
 
@@ -4671,6 +4686,295 @@ function syncAthleteWeight(weight, source = 'settings') {
   }
 
   return { imc };
+}
+
+
+
+// ===== PROFILE HUB: SHOES + GENERAL SETTINGS =====
+let currentEditingShoeId = null;
+
+function getShoesStorageKey() {
+  return StorageService.userKey('shoes');
+}
+
+function getPreferencesStorageKey() {
+  return StorageService.userKey('preferences');
+}
+
+function loadShoes() {
+  return StorageService.getJSON(getShoesStorageKey(), []);
+}
+
+function saveShoes(shoes) {
+  StorageService.setJSON(getShoesStorageKey(), Array.isArray(shoes) ? shoes : []);
+}
+
+function loadPreferences() {
+  return StorageService.getJSON(getPreferencesStorageKey(), {
+    units: 'km',
+    language: 'pt-BR',
+    theme: 'dark',
+    notifications: 'pending'
+  });
+}
+
+function savePreferences(preferences) {
+  StorageService.setJSON(getPreferencesStorageKey(), {
+    ...loadPreferences(),
+    ...(preferences || {})
+  });
+}
+
+function openShoesPage() {
+  renderShoesPage();
+  showPage('shoes');
+}
+
+function renderShoesPage() {
+  const shoes = loadShoes();
+  const empty = document.getElementById('shoes-empty-state');
+  const listState = document.getElementById('shoes-list-state');
+  const list = document.getElementById('shoes-list');
+
+  if (!empty || !listState || !list) return;
+
+  empty.classList.toggle('hidden', shoes.length > 0);
+  listState.classList.toggle('hidden', shoes.length === 0);
+
+  list.innerHTML = shoes.map(shoe => {
+    const km = Number(shoe.km || 0);
+    const goal = Number(shoe.goalKm || 700);
+    const pct = Math.min(100, goal > 0 ? (km / goal) * 100 : 0);
+    const name = shoe.nickname || [shoe.brand, shoe.model].filter(Boolean).join(' ') || 'Tênis sem nome';
+
+    return `
+      <button class="shoe-card" onclick="openShoeForm('${shoe.id}')">
+        <div class="shoe-card-icon">👟</div>
+        <div class="shoe-card-info">
+          <strong>${escapeHTML(name)}</strong>
+          <span>${escapeHTML([shoe.brand, shoe.model, shoe.color].filter(Boolean).join(' • ') || 'Sem detalhes')}</span>
+          <div class="shoe-progress"><i style="width:${pct}%"></i></div>
+          <small>${km.toFixed(1).replace('.', ',')} km de ${goal} km</small>
+        </div>
+        <b>›</b>
+      </button>
+    `;
+  }).join('');
+}
+
+function openShoeForm(id = null) {
+  const shoes = loadShoes();
+  const shoe = id ? shoes.find(item => item.id === id) : null;
+  currentEditingShoeId = shoe?.id || null;
+
+  const setValue = (fieldId, value) => {
+    const el = document.getElementById(fieldId);
+    if (el) el.value = value ?? '';
+  };
+
+  document.getElementById('shoe-form-title').textContent = shoe ? 'Editar tênis' : 'Adicionar tênis';
+  setValue('shoe-brand', shoe?.brand || '');
+  setValue('shoe-model', shoe?.model || '');
+  setValue('shoe-color', shoe?.color || '');
+  setValue('shoe-nickname', shoe?.nickname || '');
+  setValue('shoe-distance', Number(shoe?.km || 0));
+  setValue('shoe-goal', Number(shoe?.goalKm || 700));
+  document.getElementById('shoe-goal-output').textContent = Number(shoe?.goalKm || 700);
+  document.getElementById('shoe-delete-btn')?.classList.toggle('hidden', !shoe);
+
+  showPage('shoe-form');
+}
+
+function saveShoeFromForm() {
+  const shoes = loadShoes();
+  const now = new Date().toISOString();
+
+  const data = {
+    brand: document.getElementById('shoe-brand')?.value.trim() || '',
+    model: document.getElementById('shoe-model')?.value.trim() || '',
+    color: document.getElementById('shoe-color')?.value.trim() || '',
+    nickname: document.getElementById('shoe-nickname')?.value.trim() || '',
+    km: Number(document.getElementById('shoe-distance')?.value || 0),
+    goalKm: Number(document.getElementById('shoe-goal')?.value || 700),
+    updatedAt: now
+  };
+
+  if (!data.brand && !data.model && !data.nickname) {
+    showToast('Informe pelo menos marca, modelo ou apelido do tênis.', 'error');
+    return;
+  }
+
+  if (currentEditingShoeId) {
+    const index = shoes.findIndex(item => item.id === currentEditingShoeId);
+    if (index >= 0) {
+      shoes[index] = {
+        ...shoes[index],
+        ...data
+      };
+    }
+  } else {
+    shoes.push({
+      id: `shoe-${Date.now()}`,
+      createdAt: now,
+      ...data
+    });
+  }
+
+  saveShoes(shoes);
+  showToast('Tênis salvo com sucesso.', 'success');
+  openShoesPage();
+}
+
+function deleteCurrentShoe() {
+  if (!currentEditingShoeId) return;
+
+  const shoes = loadShoes().filter(item => item.id !== currentEditingShoeId);
+  saveShoes(shoes);
+  currentEditingShoeId = null;
+  showToast('Tênis removido.', 'info');
+  openShoesPage();
+}
+
+function addKmToShoe(shoeId, km) {
+  if (!shoeId || !km || Number(km) <= 0) return;
+
+  const shoes = loadShoes();
+  const index = shoes.findIndex(item => item.id === shoeId);
+  if (index < 0) return;
+
+  shoes[index] = {
+    ...shoes[index],
+    km: Math.round((Number(shoes[index].km || 0) + Number(km)) * 10) / 10,
+    updatedAt: new Date().toISOString()
+  };
+
+  saveShoes(shoes);
+}
+
+function renderShoeSelectHTML(status) {
+  if (status === 'skipped') return '';
+
+  const shoes = loadShoes();
+  if (!shoes.length) return '';
+
+  const options = shoes.map(shoe => {
+    const name = shoe.nickname || [shoe.brand, shoe.model].filter(Boolean).join(' ') || 'Tênis';
+    const km = Number(shoe.km || 0).toFixed(1).replace('.', ',');
+    return `<option value="${shoe.id}">${escapeHTML(name)} • ${km} km</option>`;
+  }).join('');
+
+  return `
+    <label class="feedback-shoe-select">
+      Tênis usado
+      <select id="feedback-shoe" class="edit-field">
+        <option value="">Não informar</option>
+        ${options}
+      </select>
+    </label>
+  `;
+}
+
+function openGeneralSettingsPage() {
+  renderGeneralSettingsPage();
+  showPage('general-settings');
+}
+
+function renderGeneralSettingsPage() {
+  const prefs = loadPreferences();
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+
+  setText('pref-units-label', prefs.units === 'mi' ? 'Milhas' : 'Km');
+  setText('pref-language-label', prefs.language === 'en-US' ? 'English' : 'Português');
+  setText('pref-theme-label', prefs.theme === 'light' ? 'Claro' : 'Escuro');
+  setText('pref-notifications-label', prefs.notifications === 'enabled' ? 'Ativas' : 'Em breve');
+}
+
+function openPreferenceModal(type) {
+  const prefs = loadPreferences();
+
+  const configs = {
+    units: {
+      icon: '📏',
+      title: 'Unidades',
+      message: 'Escolha a unidade padrão para futuras versões da IA Coach.',
+      options: [
+        ['km', 'Quilômetros'],
+        ['mi', 'Milhas']
+      ]
+    },
+    language: {
+      icon: '🌐',
+      title: 'Idioma',
+      message: 'A tradução completa será trabalhada futuramente. A escolha ficará salva.',
+      options: [
+        ['pt-BR', 'Português'],
+        ['en-US', 'English']
+      ]
+    },
+    theme: {
+      icon: '☾',
+      title: 'Tema',
+      message: 'O tema claro será lapidado futuramente. A preferência ficará salva.',
+      options: [
+        ['dark', 'Escuro'],
+        ['light', 'Claro']
+      ]
+    },
+    notifications: {
+      icon: '🔔',
+      title: 'Notificações',
+      message: 'As notificações serão implementadas em uma próxima etapa.',
+      options: [
+        ['pending', 'Configurar depois'],
+        ['enabled', 'Quero receber lembretes']
+      ]
+    }
+  };
+
+  const cfg = configs[type];
+  if (!cfg) return;
+
+  document.getElementById('modal-icon').textContent = cfg.icon;
+  document.getElementById('modal-title').textContent = cfg.title;
+  document.getElementById('modal-message').innerHTML = `
+    <div class="preference-modal">
+      <p>${cfg.message}</p>
+      ${cfg.options.map(([value, label]) => `
+        <label class="preference-option">
+          <input type="radio" name="pref-${type}" value="${value}" ${(prefs[type] || '') === value ? 'checked' : ''}>
+          <span>${label}</span>
+        </label>
+      `).join('')}
+    </div>
+  `;
+
+  const cancelBtn = document.getElementById('modal-cancel');
+  const confirmBtn = document.getElementById('modal-confirm');
+
+  cancelBtn.classList.remove('hidden');
+  cancelBtn.textContent = 'Cancelar';
+  confirmBtn.textContent = 'Salvar';
+
+  cancelBtn.onclick = () => document.getElementById('modal-overlay').classList.add('hidden');
+  confirmBtn.onclick = () => {
+    const selected = document.querySelector(`input[name="pref-${type}"]:checked`)?.value;
+    if (selected) {
+      savePreferences({ [type]: selected });
+      renderGeneralSettingsPage();
+      showToast('Preferência salva.', 'success');
+    }
+    document.getElementById('modal-overlay').classList.add('hidden');
+  };
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function openPrivacyPage() {
+  showPage('privacy');
 }
 
 

@@ -653,3 +653,27 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Não foram incluídos cards riscados nas referências: premium, níveis, produtos, eventos, redes sociais etc.
 - Edição de foto/nome mantida em painel simples dentro do perfil.
 - Cache atualizado para `ruinna-v63`.
+
+
+## Perfil: Tênis e Geral - v64
+
+- Item Tênis agora abre uma tela própria.
+- Criada tela de empty state para adicionar o primeiro tênis.
+- Criada tela de cadastro/edição de tênis com:
+  - marca
+  - modelo
+  - cor
+  - apelido
+  - distância atual
+  - meta de distância
+- Ao concluir treino, se houver tênis cadastrados, o atleta pode selecionar o tênis usado.
+- Ao concluir, os km realizados são somados automaticamente ao tênis selecionado.
+- Criada tela Geral com:
+  - Unidades
+  - Idioma
+  - Tema
+  - Notificações
+  - Privacidade
+- Itens riscados nas referências não foram incluídos.
+- Aplicativos conectados permanece como placeholder para futura integração Strava/calendário/relógios.
+- Cache atualizado para `ruinna-v64`.

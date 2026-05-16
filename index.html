@@ -429,7 +429,7 @@
                             <span>Aplicativos e dispositivos conectados</span>
                             <b>›</b>
                         </button>
-                        <button class="profile-list-item" onclick="showProfileComingSoon('Tênis')">
+                        <button class="profile-list-item" onclick="openShoesPage()">
                             <span class="profile-item-icon">👟</span>
                             <span>Tênis</span>
                             <b>›</b>
@@ -440,7 +440,7 @@
                 <section class="profile-list-section">
                     <h3>Minhas preferências</h3>
                     <div class="profile-list-card">
-                        <button class="profile-list-item" onclick="showProfileComingSoon('Geral')">
+                        <button class="profile-list-item" onclick="openGeneralSettingsPage()">
                             <span class="profile-item-icon">⚙️</span>
                             <span>Geral</span>
                             <b>›</b>
@@ -480,6 +480,160 @@
                     <span id="settings-age-readonly"></span>
                     <span id="settings-height-readonly"></span>
                 </div>
+            </div>
+        </main>
+
+        <!-- SHOES PAGE -->
+        <main id="page-shoes" class="page profile-subpage">
+            <div class="profile-subpage-container">
+                <div class="subpage-topbar">
+                    <button onclick="goToProfilePage()" aria-label="Voltar">←</button>
+                    <h2>Tênis</h2>
+                    <span></span>
+                </div>
+
+                <section id="shoes-empty-state" class="shoes-empty-state hidden">
+                    <div class="shoe-illustration">👟</div>
+                    <h2>Adicionar novos tênis</h2>
+                    <p>Adicione seus tênis de corrida para saber exatamente o quanto você correu com cada par e quando é hora de substituí-los.</p>
+                    <p>Hora de registrar alguns quilômetros!</p>
+                    <button class="profile-logout-large" onclick="openShoeForm()">Adicionar tênis</button>
+                </section>
+
+                <section id="shoes-list-state" class="shoes-list-state hidden">
+                    <div class="profile-subpage-head">
+                        <div>
+                            <span>Equipamentos</span>
+                            <h2>Meus tênis</h2>
+                            <p>Ao concluir um treino, selecione o tênis usado para atualizar a quilometragem automaticamente.</p>
+                        </div>
+                        <button class="settings-mini-btn" onclick="openShoeForm()">Adicionar</button>
+                    </div>
+                    <div id="shoes-list" class="shoes-list"></div>
+                </section>
+            </div>
+        </main>
+
+        <!-- SHOE FORM PAGE -->
+        <main id="page-shoe-form" class="page profile-subpage">
+            <div class="profile-subpage-container">
+                <div class="subpage-topbar">
+                    <button onclick="openShoesPage()" aria-label="Voltar">←</button>
+                    <h2 id="shoe-form-title">Adicionar tênis</h2>
+                    <span></span>
+                </div>
+
+                <section class="shoe-form-card">
+                    <label>
+                        <span>Marca</span>
+                        <input id="shoe-brand" class="settings-input" placeholder="Marca">
+                    </label>
+                    <label>
+                        <span>Modelo</span>
+                        <input id="shoe-model" class="settings-input" placeholder="Modelo">
+                    </label>
+                    <label>
+                        <span>Cor</span>
+                        <input id="shoe-color" class="settings-input" placeholder="Cor">
+                    </label>
+                    <label>
+                        <span>Apelido</span>
+                        <input id="shoe-nickname" class="settings-input" placeholder="Apelido">
+                    </label>
+                    <label>
+                        <span>Distância atual</span>
+                        <div class="shoe-distance-input">
+                            <input id="shoe-distance" type="number" class="settings-input" min="0" step="0.1" placeholder="0">
+                            <strong>km</strong>
+                        </div>
+                    </label>
+
+                    <div class="shoe-goal-card">
+                        <span>Meta de distância</span>
+                        <strong><b id="shoe-goal-output">700</b> km</strong>
+                        <input id="shoe-goal" type="range" min="300" max="1000" step="50" value="700" oninput="document.getElementById('shoe-goal-output').textContent=this.value">
+                    </div>
+
+                    <p class="shoe-tip">ⓘ Recomendamos acompanhar seus tênis entre 500 e 800 km. Esse intervalo ajuda a evitar correr com amortecimento já desgastado.</p>
+
+                    <button class="profile-logout-large" onclick="saveShoeFromForm()">Salvar</button>
+                    <button id="shoe-delete-btn" class="profile-delete-shoe hidden" onclick="deleteCurrentShoe()">Excluir tênis</button>
+                </section>
+            </div>
+        </main>
+
+        <!-- GENERAL SETTINGS PAGE -->
+        <main id="page-general-settings" class="page profile-subpage">
+            <div class="profile-subpage-container">
+                <div class="subpage-topbar">
+                    <button onclick="goToProfilePage()" aria-label="Voltar">←</button>
+                    <h2>Geral</h2>
+                    <span></span>
+                </div>
+
+                <section class="profile-list-section">
+                    <h3>Personalização</h3>
+                    <div class="profile-list-card">
+                        <button class="profile-list-item" onclick="openPreferenceModal('units')">
+                            <span class="profile-item-icon">📏</span>
+                            <span>Unidades</span>
+                            <small id="pref-units-label">Km</small>
+                            <b>›</b>
+                        </button>
+                        <button class="profile-list-item" onclick="openPreferenceModal('language')">
+                            <span class="profile-item-icon">🌐</span>
+                            <span>Idioma</span>
+                            <small id="pref-language-label">Português</small>
+                            <b>›</b>
+                        </button>
+                        <button class="profile-list-item" onclick="openPreferenceModal('theme')">
+                            <span class="profile-item-icon">☾</span>
+                            <span>Tema</span>
+                            <small id="pref-theme-label">Escuro</small>
+                            <b>›</b>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="profile-list-section">
+                    <h3>Administrador</h3>
+                    <div class="profile-list-card">
+                        <button class="profile-list-item" onclick="openPreferenceModal('notifications')">
+                            <span class="profile-item-icon">🔔</span>
+                            <span>Notificações</span>
+                            <small id="pref-notifications-label">Em breve</small>
+                            <b>›</b>
+                        </button>
+                        <button class="profile-list-item" onclick="openPrivacyPage()">
+                            <span class="profile-item-icon">📄</span>
+                            <span>Privacidade</span>
+                            <small>Termos</small>
+                            <b>›</b>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- PRIVACY PAGE -->
+        <main id="page-privacy" class="page profile-subpage">
+            <div class="profile-subpage-container">
+                <div class="subpage-topbar">
+                    <button onclick="openGeneralSettingsPage()" aria-label="Voltar">←</button>
+                    <h2>Privacidade</h2>
+                    <span></span>
+                </div>
+
+                <section class="privacy-card">
+                    <h3>Política de Privacidade</h3>
+                    <p>O RUINNA salva seus dados localmente neste navegador nesta fase de testes. Informações como planilha, progresso, perfil e tênis não são enviadas para um banco externo nesta versão.</p>
+
+                    <h3>Termos e Condições</h3>
+                    <p>O app oferece apoio para organização de treinos, mas não substitui avaliação médica, treinador presencial ou acompanhamento profissional. Use os treinos com responsabilidade.</p>
+
+                    <h3>Próxima fase</h3>
+                    <p>Quando integrações como Strava, calendário e nuvem forem adicionadas, esta área será atualizada com detalhes de sincronização e permissões.</p>
+                </section>
             </div>
         </main>
 
