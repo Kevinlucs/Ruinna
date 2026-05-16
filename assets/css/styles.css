@@ -8332,3 +8332,150 @@ body,
 .modal-warning-list li {
   margin: 3px 0;
 }
+
+
+/* ===== RUNEVO V70: LOGO, IA EVO, TERRAIN ===== */
+:root,
+html,
+body,
+.app,
+.page,
+#page-ai {
+  background: #000000 !important;
+  background-color: #000000 !important;
+}
+
+.header-title {
+  font-size: clamp(1.65rem, 6.2vw, 2.55rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.025em !important;
+}
+
+.header-title .brand-evo {
+  color: #CCFF00 !important;
+}
+
+.app-header {
+  min-height: 88px;
+}
+
+.header-user-profile,
+.header-tour-help {
+  transform: scale(0.92);
+}
+
+.ai-container {
+  padding-top: 18px;
+}
+
+/* Corrige o buraco preto no topo do IA no mobile: o hero volta para cima e com espaçamento coerente. */
+@media (max-width: 767px) {
+  #page-ai {
+    padding-top: 0 !important;
+  }
+
+  .ai-container {
+    padding-top: 18px !important;
+  }
+
+  .ai-hero {
+    min-height: auto !important;
+    padding: 22px 18px 18px !important;
+    margin-top: 0 !important;
+  }
+
+  .ai-hero-icon {
+    margin-top: 0 !important;
+    font-size: 3.6rem !important;
+  }
+
+  .ai-hero-title {
+    font-size: clamp(2rem, 10vw, 3.1rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .ai-hero-sub {
+    margin-top: 8px !important;
+  }
+
+  .app-header {
+    min-height: 82px;
+  }
+}
+
+.terrain-field {
+  margin-top: 16px;
+}
+
+.terrain-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.terrain-option input {
+  display: none;
+}
+
+.terrain-card {
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 15px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.10);
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.terrain-card strong {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.terrain-card small {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  font-weight: 760;
+}
+
+.terrain-card b {
+  font-size: 1.6rem;
+  color: var(--text-muted);
+}
+
+.terrain-option input:checked + .terrain-card {
+  background: rgba(204, 255, 0, 0.10);
+  border-color: rgba(204, 255, 0, 0.86);
+  box-shadow: 0 0 0 1px rgba(204, 255, 0, 0.22), 0 16px 34px rgba(204, 255, 0, 0.08);
+}
+
+.terrain-option input:checked + .terrain-card strong,
+.terrain-option input:checked + .terrain-card b {
+  color: #CCFF00;
+}
+
+@media (max-width: 720px) {
+  .terrain-options {
+    grid-template-columns: 1fr;
+  }
+
+  .terrain-card {
+    min-height: 96px;
+  }
+}
+
+/* IA Evo / Motor Evo refinamento */
+.ai-trust-eyebrow {
+  color: #CCFF00 !important;
+}
+
+.ai-trust-grid > div {
+  align-items: center !important;
+  text-align: center !important;
+}

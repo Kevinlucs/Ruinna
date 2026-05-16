@@ -155,6 +155,45 @@ const AICoach = (() => {
     return `${secondsToPace(baseSeconds + minAdd)}-${secondsToPace(baseSeconds + maxAdd)}`;
   }
 
+
+  function getTerrainLabel(value) {
+    const labels = {
+      plano: 'Plano',
+      misto: 'Misto',
+      elevado: 'Elevado'
+    };
+    return labels[value] || 'Plano';
+  }
+
+  function getTerrainGuidance(value) {
+    const guidance = {
+      plano: {
+        label: 'terreno plano',
+        volumeFactor: 1,
+        longRunFactor: 1,
+        recoveryEvery: 4,
+        focus: 'ritmo contínuo, economia de corrida e progressão de volume/pace'
+      },
+      misto: {
+        label: 'terreno misto',
+        volumeFactor: 0.94,
+        longRunFactor: 0.94,
+        recoveryEvery: 3,
+        focus: 'subidas leves/moderadas, controle por zona e fortalecimento específico'
+      },
+      elevado: {
+        label: 'terreno elevado',
+        volumeFactor: 0.88,
+        longRunFactor: 0.88,
+        recoveryEvery: 3,
+        focus: 'subidas, técnica, esforço por zona, maior recuperação e menor agressividade de pace'
+      }
+    };
+
+    return guidance[value] || guidance.plano;
+  }
+
+
   function inferBasePaceSeconds(userData) {
     // No RunEvo, o teste de 3km é a âncora: o pace médio do teste vira a referência da Z3.
     const fromPace = paceToSeconds(userData.test3kmPace);
@@ -290,6 +329,7 @@ IMPORTANTE SOBRE PRESCRIÇÃO DOS TREINOS:
 - Para tempo/ritmo de prova: usar bloco sustentado em Z3.
 - Para longão: priorizar Z1/Z2, com progressão controlada até Z3 quando indicado.
 - O teste de 3km é obrigatório; o atleta informa apenas o tempo total, e o pace médio calculado representa a Z3 do atleta. O objetivo textual do atleta deve influenciar volume, progressão, risco, recuperação e especificidade dos treinos.
+- O terreno principal é obrigatório e impacta diretamente a planilha: plano permite mais constância de ritmo; misto pede variação controlada/subidas moderadas; elevado exige menor agressividade de pace, mais recuperação e orientação por esforço/zona.
 
 DADOS DO ATLETA:
 - Nome: ${userData.name || 'Atleta'}

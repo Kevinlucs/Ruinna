@@ -637,21 +637,21 @@
             </div>
         </main>
 
-        <!-- AI COACH PAGE -->
+        <!-- IA EVO PAGE -->
         <main id="page-ai" class="page">
             <div class="ai-container">
                 <!-- Header -->
                 <div class="ai-hero">
                     <div class="ai-hero-icon">🤖</div>
-                    <h2 class="ai-hero-title">IA Coach</h2>
+                    <h2 class="ai-hero-title">IA Evo</h2>
                     <p class="ai-hero-sub">evolua sua corrida com inteligência</p>
                 </div>
 
                 <div class="ai-trust-card">
                     <div class="ai-trust-main">
-                        <span class="ai-trust-eyebrow">Motor RunEvo</span>
+                        <span class="ai-trust-eyebrow">Motor Evo</span>
                         <h3>Planilha personalizada com validação técnica</h3>
-                        <p>A IA interpreta suas métricas, objetivo e histórico. O motor do app valida semanas, volumes, longões e distribuição antes de liberar a planilha.</p>
+                        <p>A IA interpreta suas métricas, objetivo e histórico. O Motor Evo valida semanas, volumes, terreno, longões e distribuição antes de liberar a planilha.</p>
                     </div>
                     <div class="ai-trust-grid">
                         <div><strong>1</strong><span>Análise do perfil</span></div>
@@ -727,6 +727,37 @@
                                 <label class="ai-label">Distância (km)</label>
                                 <input type="number" id="ai-custom-distance" class="ai-input" placeholder="50" min="1"
                                     max="500">
+                            </div>
+                        </div>
+
+
+                        <div class="ai-form-group terrain-field">
+                            <label class="ai-label">Terreno principal dos treinos</label>
+                            <div class="terrain-options">
+                                <label class="terrain-option">
+                                    <input type="radio" name="ai-terrain" value="plano" checked>
+                                    <span class="terrain-card">
+                                        <strong>Plano</strong>
+                                        <small>Baixa elevação • até 5 m/km</small>
+                                        <b>↔</b>
+                                    </span>
+                                </label>
+                                <label class="terrain-option">
+                                    <input type="radio" name="ai-terrain" value="misto">
+                                    <span class="terrain-card">
+                                        <strong>Misto</strong>
+                                        <small>Elevação moderada • 5 a 15 m/km</small>
+                                        <b>⌁</b>
+                                    </span>
+                                </label>
+                                <label class="terrain-option">
+                                    <input type="radio" name="ai-terrain" value="elevado">
+                                    <span class="terrain-card">
+                                        <strong>Elevado</strong>
+                                        <small>Muitas subidas • acima de 15 m/km</small>
+                                        <b>▲</b>
+                                    </span>
+                                </label>
                             </div>
                         </div>
 
@@ -850,7 +881,7 @@
         <!-- PLAN PREVIEW PAGE -->
         <main id="page-plan-preview" class="page plan-preview-page">
             <div class="plan-preview-shell">
-                <button class="profile-hub-back plan-preview-back" onclick="resetAIFormAndGenerateAnother()" aria-label="Voltar para IA Coach">
+                <button class="profile-hub-back plan-preview-back" onclick="resetAIFormAndGenerateAnother()" aria-label="Voltar para IA Evo">
                     ←
                 </button>
 
@@ -910,7 +941,7 @@
                     <circle cx="14.5" cy="9.5" r="1"></circle>
                     <path d="M9 14h6"></path>
                 </svg>
-                <span>IA Coach</span>
+                <span>IA Evo</span>
             </button>
             <button class="nav-item" data-page="stats" id="nav-stats">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

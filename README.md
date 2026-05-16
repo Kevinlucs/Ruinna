@@ -743,3 +743,18 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Fundo global/mobile reforçado como preto para evitar fundo azulado no celular.
 - Cards do Motor RunEvo centralizados/alinhados para melhor acabamento visual.
 - Cache atualizado para `runevo-v69`.
+
+
+## RunEvo v70 - IA Evo, Motor Evo e terreno
+
+- IA Coach renomeado para IA Evo.
+- Motor RunEvo renomeado para Motor Evo.
+- Ajustado tamanho do nome/logo textual RunEvo no header mobile.
+- Corrigido espaçamento excessivo no topo da IA Evo no mobile.
+- Adicionado campo “Terreno principal dos treinos” em Dados do Corredor:
+  - Plano: até 5 m/km
+  - Misto: 5 a 15 m/km
+  - Elevado: acima de 15 m/km
+- Terreno entra no formulário, no perfil salvo e na análise do Motor Evo.
+- O Motor Evo passa a tratar terreno como fator técnico para volume, longões, recuperação e orientação por zona.
+- Cache atualizado para `runevo-v70`.

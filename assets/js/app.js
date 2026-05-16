@@ -487,7 +487,7 @@ function renderHome() {
   } else if (allWorkouts.length === 0) {
     hero.innerHTML = `
       <div class="workout-title">Nenhum treino disponível! 🤖</div>
-      <div class="workout-date">Acesse a aba "IA Coach" e gere sua planilha de treinos personalizada.</div>
+      <div class="workout-date">Acesse a aba "IA Evo" e gere sua planilha de treinos personalizada.</div>
       <span class="hero-arrow">›</span>`;
     hero.onclick = () => navigateTo('ai');
   } else {
@@ -1077,7 +1077,7 @@ function renderAdjustmentTimeline(rows) {
     <div class="adjustment-timeline-compact">
       ${adjustedRows.map(row => {
         const action = row.adjustment?.action || 'maintain';
-        const source = row.checkin?.feedbackSource === 'ai' ? 'Coach IA' : row.checkin ? 'Regra local' : 'Sistema';
+        const source = row.checkin?.feedbackSource === 'ai' ? 'IA Evo' : row.checkin ? 'Regra local' : 'Sistema';
         const message = row.checkin?.aiFeedback?.messageToUser || row.checkin?.resultMessage || row.adjustment?.reason || 'Semana analisada pelo RunEvo.';
 
         return `
@@ -1105,7 +1105,7 @@ function renderEvolutionDashboard() {
     el.innerHTML = `
       <div class="evolution-empty">
         <strong>Dashboard aguardando plano.</strong>
-        <p>Gere uma planilha na aba IA Coach para liberar os gráficos de evolução.</p>
+        <p>Gere uma planilha na aba IA Evo para liberar os gráficos de evolução.</p>
       </div>
     `;
     return;
@@ -1303,7 +1303,7 @@ function renderEvolutionHistory() {
     el.innerHTML = `
       <div class="evolution-empty">
         <strong>Nenhum plano ativo ainda.</strong>
-        <p>Gere uma planilha na aba IA Coach para acompanhar sua evolução semana a semana.</p>
+        <p>Gere uma planilha na aba IA Evo para acompanhar sua evolução semana a semana.</p>
       </div>
     `;
     return;
@@ -1393,7 +1393,7 @@ function renderEvolutionHistory() {
         `).join('') : `
           <div class="evolution-empty compact">
             <strong>Nenhum check-in concluído.</strong>
-            <p>Finalize uma semana para liberar a leitura do Coach IA.</p>
+            <p>Finalize uma semana para liberar a leitura do IA Evo.</p>
           </div>
         `}
       </div>
@@ -1714,7 +1714,7 @@ function buildProfessionalExcelHTML() {
     <tr><td colspan="14"></td></tr>
 
     ${summary.athleteAnalysis ? `
-      <tr><td colspan="14" class="section-title">Análise do Coach IA</td></tr>
+      <tr><td colspan="14" class="section-title">Análise do IA Evo</td></tr>
       <tr>
         <td colspan="2" class="kpi-label">Nível detectado</td><td colspan="2" class="kpi-value">${excelCell(summary.athleteAnalysis.detectedLevel || '')}</td>
         <td colspan="2" class="kpi-label">Risco</td><td colspan="2" class="kpi-value">${excelCell(summary.athleteAnalysis.riskLevel || '')}</td>
@@ -1847,7 +1847,7 @@ function buildProfessionalPDFHTML() {
   const coach = summary.athleteAnalysis || {};
   const coachWarnings = summary.coachWarnings || [];
   const coachSection = summary.athleteAnalysis ? `
-    <h2 class="section-title">Análise do Coach IA</h2>
+    <h2 class="section-title">Análise do IA Evo</h2>
     <section class="coach-box">
       <div class="coach-summary-pdf">${pdfCell(coach.coachSummary || '')}</div>
       <div class="coach-grid-pdf">
@@ -2423,6 +2423,26 @@ function getAIErrorTip(message = '') {
   return 'Revise os campos obrigatórios. Se estiver tudo certo, tente novamente em alguns instantes.';
 }
 
+
+function getTerrainLabel(value) {
+  const labels = {
+    plano: 'Plano',
+    misto: 'Misto',
+    elevado: 'Elevado'
+  };
+  return labels[value] || 'Plano';
+}
+
+function getTerrainStrategy(value) {
+  const strategies = {
+    plano: 'Priorizar ritmo contínuo, economia de corrida e progressão por volume/pace.',
+    misto: 'Incluir variação moderada, subidas controladas e treinos de força específica com cautela.',
+    elevado: 'Reduzir agressividade de pace, priorizar esforço por zona, recuperação maior e preparação muscular para subidas.'
+  };
+  return strategies[value] || strategies.plano;
+}
+
+
 function showAIPreflightSummary(data) {
   const weeks = AICoach.calculateWeeks(data.startDate, data.raceDate);
   const distance = data.targetDistance === 'ultra' || data.targetDistance === 'custom'
@@ -2435,6 +2455,7 @@ function showAIPreflightSummary(data) {
     `Treinos: ${data.daysPerWeek}x por semana`,
     `Nível: ${data.level}`,
     data.test3kmTime ? `Teste 3km: ${data.test3kmTime}` : null,
+    data.terrain ? `Terreno: ${getTerrainLabel(data.terrain)}` : null,
     data.objective ? `Objetivo informado` : null
   ].filter(Boolean).join(' • ');
 
@@ -2560,6 +2581,7 @@ function getFormData() {
     level: document.querySelector('input[name="ai-level"]:checked')?.value || 'intermediario',
     targetDistance: dist,
     customDistance: document.getElementById('ai-custom-distance').value || '',
+    terrain: document.querySelector('input[name="ai-terrain"]:checked')?.value || 'plano',
     startDate: document.getElementById('ai-start-date').value,
     raceDate: document.getElementById('ai-race-date').value,
     daysPerWeek: document.getElementById('ai-days').value,
@@ -2590,6 +2612,10 @@ function validateFormData(data) {
 
   if (!data.weight) return { message: 'Informe seu peso.', field: 'ai-weight' };
   if (!Number.isFinite(weight) || weight < 30 || weight > 250) return { message: 'Informe um peso válido em kg.', field: 'ai-weight' };
+
+  if (!['plano', 'misto', 'elevado'].includes(data.terrain)) {
+    return { message: 'Selecione o terreno principal dos treinos.', field: 'ai-distance-row' };
+  }
 
   const previousChecks = [
     { time: data.time5k, noRun: data.no5k, field: 'ai-time5k', label: '5K' },
@@ -2622,7 +2648,7 @@ function validateFormData(data) {
 
   if (!data.objective || data.objective.length < 10) {
     return {
-      message: 'Descreva seu objetivo. O Motor RunEvo usa esse texto para personalizar melhor a planilha.',
+      message: 'Descreva seu objetivo. O Motor Evo usa esse texto para personalizar melhor a planilha.',
       field: 'ai-objective'
     };
   }
@@ -2697,6 +2723,9 @@ function resetAIFormForNewPlan() {
 
   const level = document.querySelector('input[name="ai-level"][value="intermediario"]');
   if (level) level.checked = true;
+
+  const terrain = document.querySelector('input[name="ai-terrain"][value="plano"]');
+  if (terrain) terrain.checked = true;
 
   const result = document.getElementById('ai-result');
   if (result) result.classList.add('hidden');
@@ -2895,7 +2924,7 @@ function renderCoachAnalysis(plan) {
     <div class="coach-analysis-card">
       <div class="coach-analysis-header">
         <div>
-          <span class="plan-review-eyebrow">Análise do Coach IA</span>
+          <span class="plan-review-eyebrow">Análise do IA Evo</span>
           <h4>🧠 Estratégia personalizada</h4>
         </div>
         <span class="coach-risk-pill ${riskClass}">Risco: ${escapeHTML(analysis.riskLevel || blueprint.profile?.riskLevel || 'baixo')}</span>
@@ -3187,7 +3216,7 @@ function handleUnadoptPlan() {
       <li>avaliações e ajustes adaptativos</li>
     </ul>
     <p><strong>${escapeHTML(plan?.planName || 'Planilha atual')}</strong></p>
-    <p>Depois disso, você poderá gerar uma nova planilha no IA Coach.</p>
+    <p>Depois disso, você poderá gerar uma nova planilha no IA Evo.</p>
   `;
 
   cancelBtn.classList.remove('hidden');
@@ -3359,7 +3388,7 @@ function openWorkoutFeedbackModal(id, status) {
       ` : `
         <div class="skip-info-box pro">
           <strong>Treino pulado registrado</strong>
-          <p>Ele contará para liberar o check-in. O Coach IA irá considerar esse treino pulado e redistribuir carga com prudência na próxima semana, quando for seguro.</p>
+          <p>Ele contará para liberar o check-in. O IA Evo irá considerar esse treino pulado e redistribuir carga com prudência na próxima semana, quando for seguro.</p>
         </div>
       `}
 
@@ -3535,7 +3564,7 @@ function renderWeeklyCheckInCard(currentWeekWorkouts) {
       <div class="checkin-result">
         <strong>${escapeHTML(checkin.resultTitle || 'Plano revisado')}</strong>
         <p>${escapeHTML(checkin.resultMessage || 'Check-in registrado.')}</p>
-        ${checkin.adjustment?.source === 'ai' ? '<span class="checkin-source ai">🧠 Análise do Coach IA</span>' : '<span class="checkin-source local">⚙️ Ajuste automático local</span>'}
+        ${checkin.adjustment?.source === 'ai' ? '<span class="checkin-source ai">🧠 Análise do IA Evo</span>' : '<span class="checkin-source local">⚙️ Ajuste automático local</span>'}
       </div>
     ` : `
       <p class="checkin-hint">Registre todos os treinos da semana como concluído ou pulado para liberar o check-in.</p>
@@ -3571,7 +3600,7 @@ function openWeeklyCheckin(weekIndex) {
       ${((weekIndex + 1) % 4 === 0) ? `
         <div class="checkin-weight-box">
           <strong>Atualização obrigatória de peso</strong>
-          <p>A cada 4 semanas, informe seu peso atual para recalcular o IMC e ajudar o Coach IA na análise.</p>
+          <p>A cada 4 semanas, informe seu peso atual para recalcular o IMC e ajudar o IA Evo na análise.</p>
           <label>Peso atual (kg)</label>
           <input type="number" class="edit-field" id="checkin-current-weight" min="30" max="250" step="0.1" value="${getCurrentAthleteMetrics().weight || ''}" placeholder="Ex: 82.5">
         </div>
@@ -3675,7 +3704,7 @@ function showWeeklyCheckinResultModal(weekIndex, feedback, adjustment) {
   const summary = feedback.summary || getWeekSummary(weekIndex);
   const weekLabel = summary.workouts?.[0]?.week || adjustment.week || `S${weekIndex + 1}`;
   const sourceLabel = adjustment.source === 'ai'
-    ? '🧠 Análise do Coach IA'
+    ? '🧠 Análise do IA Evo'
     : '⚙️ Ajuste automático local';
 
   const completionPercent = summary.total
@@ -3883,7 +3912,7 @@ function buildAICheckinPrompt(weekIndex, feedback, localRecommendation) {
   };
 
   return `
-Você é o Coach IA do RunEvo. Analise o check-in semanal e recomende um ajuste prudente para a próxima semana.
+Você é o IA Evo do RunEvo. Analise o check-in semanal e recomende um ajuste prudente para a próxima semana.
 
 DADOS DO CHECK-IN:
 ${JSON.stringify(payload, null, 2)}
@@ -4092,7 +4121,7 @@ async function runSmartPlanAdjustmentEngine(weekIndex, feedback) {
     const ai = await callAICheckinCoach(weekIndex, feedback, localRecommendation);
     recommendation = normalizeAICheckinRecommendation(ai, feedback, localRecommendation);
   } catch (error) {
-    console.warn('Coach IA indisponível no check-in. Usando regra local.', error);
+    console.warn('IA Evo indisponível no check-in. Usando regra local.', error);
   }
 
   const adjustmentApplied = applyAdjustmentToStoredPlan(
@@ -5043,7 +5072,7 @@ function openPreferenceModal(type) {
     units: {
       icon: '📏',
       title: 'Unidades',
-      message: 'Escolha a unidade padrão para futuras versões da IA Coach.',
+      message: 'Escolha a unidade padrão para futuras versões da IA Evo.',
       options: [
         ['km', 'Quilômetros'],
         ['mi', 'Milhas']
@@ -5464,8 +5493,8 @@ const RunEvo_TOUR_STEPS = [
   {
     page: 'ai',
     icon: '🤖',
-    title: 'IA Coach',
-    text: 'A IA Coach foi treinada para gerar uma planilha personalizada com base nas suas métricas, histórico, objetivo, datas e nível atual. Quanto melhores os dados, mais precisa fica a estratégia.'
+    title: 'IA Evo',
+    text: 'A IA Evo foi treinada para gerar uma planilha personalizada com base nas suas métricas, histórico, objetivo, datas e nível atual. Quanto melhores os dados, mais precisa fica a estratégia.'
   },
   {
     page: 'phases',
@@ -5593,7 +5622,7 @@ function confirmReplayTour(event) {
   document.getElementById('modal-title').textContent = 'Rever tour do RunEvo?';
   document.getElementById('modal-message').innerHTML = `
     <div class="tour-card">
-      <p>Deseja rever a apresentação rápida do app? O tour mostra como usar Início, IA Coach, Treinos, Estatísticas e Perfil.</p>
+      <p>Deseja rever a apresentação rápida do app? O tour mostra como usar Início, IA Evo, Treinos, Estatísticas e Perfil.</p>
     </div>
   `;
 
