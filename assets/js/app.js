@@ -2159,6 +2159,10 @@ function showPage(page) {
     renderGeneralSettingsPage();
   }
 
+  if (page === 'ai') {
+    updateAdoptedBanner();
+  }
+
   window.scrollTo(0, 0);
 }
 
@@ -2172,7 +2176,6 @@ function renderAICoachPage() {
   const localProfile = athleteMetrics?.profile || null;
   const profile = AICoach.loadProfile();
   if (profile) {
-    if (profile.name) document.getElementById('ai-name').value = profile.name;
     if (profile.age) document.getElementById('ai-age').value = profile.age;
     if (profile.height) document.getElementById('ai-height').value = profile.height;
     if (profile.weight) document.getElementById('ai-weight').value = profile.weight;
@@ -2195,7 +2198,6 @@ function renderAICoachPage() {
     toggleCustomDistance();
     updateWeeksInfo();
   } else if (localProfile) {
-    if (localProfile.displayName) document.getElementById('ai-name').value = localProfile.displayName;
     if (localProfile.age) document.getElementById('ai-age').value = localProfile.age;
     if (localProfile.height) document.getElementById('ai-height').value = localProfile.height;
     if (localProfile.weight) document.getElementById('ai-weight').value = localProfile.weight;
@@ -2727,6 +2729,15 @@ function resetAIFormAndGenerateAnother() {
 async function handleGeneratePlan() {
   clearAIFieldErrors();
 
+  if (AICoach.isPlanAdopted()) {
+    showSimpleModal(
+      '🔒',
+      'Planilha ativa',
+      'Você já possui uma planilha adotada. Para gerar outra, remova a planilha atual primeiro. Ao remover, suas estatísticas, check-ins e avaliações dessa jornada serão apagados.'
+    );
+    return;
+  }
+
   const data = getFormData();
   const error = validateFormData(data);
 
@@ -3160,42 +3171,80 @@ function handleAdoptPlan() {
 }
 
 function handleUnadoptPlan() {
-  document.getElementById('modal-icon').textContent = '🔄';
-  document.getElementById('modal-title').textContent = 'Remover Plano da IA?';
-  document.getElementById('modal-message').textContent =
-    'Voltar ao plano original hardcoded? O plano gerado ficará salvo para readoção.';
-  cancelBtn.classList.remove('hidden');
-  cancelBtn.textContent = 'Fechar';
-  cancelBtn.disabled = false;
-  confirmBtn.textContent = status === 'skipped' ? 'Registrar pulo' : 'Concluir treino';
-  confirmBtn.disabled = false;
+  const modal = document.getElementById('modal-overlay');
+  const cancelBtn = document.getElementById('modal-cancel');
+  const confirmBtn = document.getElementById('modal-confirm');
+  const plan = AICoach.loadPlan();
 
-  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-icon').textContent = '⚠️';
+  document.getElementById('modal-title').textContent = 'Remover planilha atual?';
+  document.getElementById('modal-message').innerHTML = `
+    <p>Ao remover a planilha ativa, o RunEvo vai apagar o progresso desta jornada.</p>
+    <ul class="modal-warning-list">
+      <li>treinos concluídos e pulados</li>
+      <li>estatísticas acumuladas</li>
+      <li>check-ins semanais</li>
+      <li>avaliações e ajustes adaptativos</li>
+    </ul>
+    <p><strong>${escapeHTML(plan?.planName || 'Planilha atual')}</strong></p>
+    <p>Depois disso, você poderá gerar uma nova planilha no IA Coach.</p>
+  `;
+
+  cancelBtn.classList.remove('hidden');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.disabled = false;
+  cancelBtn.onclick = () => modal.classList.add('hidden');
+
+  confirmBtn.textContent = 'Remover planilha';
+  confirmBtn.disabled = false;
   confirmBtn.onclick = () => {
-    AICoach.unadoptPlan();
-    document.getElementById('modal-overlay').classList.add('hidden');
-    restoreOriginalPlan();
-    updateAdoptedBanner();
-    renderHome();
-    renderPhases();
+    try {
+      AICoach.unadoptPlan();
+      clearProgress();
+      restoreOriginalPlan();
+
+      modal.classList.add('hidden');
+
+      updateAdoptedBanner();
+      renderHome();
+      renderPhases();
+      renderStats();
+
+      pageHistory.length = 0;
+      showPage('ai');
+
+      showToast('Planilha removida. Agora você pode gerar uma nova.', 'info');
+    } catch (error) {
+      console.error('Erro ao remover planilha:', error);
+      showSimpleModal('⚠️', 'Erro ao remover', 'Não foi possível remover a planilha agora. Recarregue a página e tente novamente.');
+    }
   };
-  document.getElementById('modal-cancel').onclick = () => {
-    document.getElementById('modal-overlay').classList.add('hidden');
-  };
+
+  modal.classList.remove('hidden');
 }
 
 function updateAdoptedBanner() {
   const banner = document.getElementById('ai-adopted-banner');
+  const generateBtn = document.getElementById('btn-generate');
+
+  if (!banner) return;
+
   if (AICoach.isPlanAdopted()) {
     const plan = AICoach.loadPlan();
+
     if (plan) {
-      document.getElementById('adopted-plan-name').textContent = plan.planName || 'Plano IA Ativo';
+      document.getElementById('adopted-plan-name').textContent = plan.planName || 'Planilha ativa';
       document.getElementById('adopted-plan-detail').textContent =
-        `${plan.totalWeeks} semanas • ${plan.raceName}`;
+        `${plan.totalWeeks} semanas • ${plan.raceName} • remova para gerar outra`;
     }
+
     banner.classList.remove('hidden');
+    generateBtn?.classList.add('disabled-by-active-plan');
+    if (generateBtn) generateBtn.title = 'Remova a planilha atual para gerar outra.';
   } else {
     banner.classList.add('hidden');
+    generateBtn?.classList.remove('disabled-by-active-plan');
+    if (generateBtn) generateBtn.title = '';
   }
 }
 

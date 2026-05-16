@@ -727,3 +727,19 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Ao adotar a planilha, o app redireciona para Início.
 - Ao gerar outra planilha, o app volta para IA Coach com o formulário zerado.
 - Cache atualizado para `runevo-v68`.
+
+
+## IA Coach active plan guard - v69
+
+- Corrigido botão Remover na planilha ativa dentro do IA Coach.
+- Remoção agora exibe alerta informando perda de:
+  - estatísticas
+  - check-ins
+  - avaliações
+  - ajustes adaptativos
+  - progresso da jornada
+- Ao remover a planilha, o app limpa o progresso e libera geração de uma nova.
+- IA Coach bloqueia geração de outra planilha enquanto houver uma planilha adotada.
+- Fundo global/mobile reforçado como preto para evitar fundo azulado no celular.
+- Cards do Motor RunEvo centralizados/alinhados para melhor acabamento visual.
+- Cache atualizado para `runevo-v69`.
