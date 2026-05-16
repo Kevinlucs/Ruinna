@@ -633,3 +633,23 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - O app agora prioriza o cálculo pela prescrição do treino antes de usar pace salvo antigo.
 - Isso evita que o atleta seja condicionado a correr sempre na ponta mais rápida da zona.
 - Cache atualizado para `ruinna-v62`.
+
+
+## Profile hub redesign - v63
+
+- Aba Perfil removida da navegação inferior.
+- Perfil agora abre ao clicar no avatar/foto do header.
+- Tela Perfil redesenhada em estilo hub:
+  - avatar grande
+  - nome do atleta
+  - data de entrada
+  - botão Editar perfil
+  - métricas rápidas
+  - Meus itens
+  - Preferências
+  - Conta
+  - Sair
+  - Termos e Política
+- Não foram incluídos cards riscados nas referências: premium, níveis, produtos, eventos, redes sociais etc.
+- Edição de foto/nome mantida em painel simples dentro do perfil.
+- Cache atualizado para `ruinna-v63`.

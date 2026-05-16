@@ -4673,6 +4673,64 @@ function syncAthleteWeight(weight, source = 'settings') {
   return { imc };
 }
 
+
+function formatProfileJoinDate(profile = null) {
+  const source = profile?.createdAt || profile?.updatedAt || new Date().toISOString();
+  const date = new Date(source);
+  const months = ['jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+
+  if (Number.isNaN(date.getTime())) return 'Entrou no RUINNA';
+
+  return `Entrou em ${months[date.getMonth()]} de ${date.getFullYear()}`;
+}
+
+function toggleProfileEditPanel(force) {
+  const panel = document.getElementById('profile-edit-panel');
+  if (!panel) return;
+
+  const shouldOpen = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !shouldOpen);
+
+  if (shouldOpen) {
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+  }
+}
+
+function showProfileComingSoon(title) {
+  document.getElementById('modal-icon').textContent = '🛠️';
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-message').textContent = 'Essa área será detalhada na próxima etapa do perfil.';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-cancel').classList.add('hidden');
+  document.getElementById('modal-confirm').textContent = 'Entendi';
+  document.getElementById('modal-confirm').onclick = () => {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    document.getElementById('modal-cancel').classList.remove('hidden');
+  };
+}
+
+function confirmDeleteLocalAccount() {
+  document.getElementById('modal-icon').textContent = '⚠️';
+  document.getElementById('modal-title').textContent = 'Excluir dados locais?';
+  document.getElementById('modal-message').textContent = 'Isso remove os dados salvos deste navegador. Use apenas para testes ou troca de atleta.';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+
+  const cancelBtn = document.getElementById('modal-cancel');
+  const confirmBtn = document.getElementById('modal-confirm');
+
+  cancelBtn.classList.remove('hidden');
+  cancelBtn.textContent = 'Cancelar';
+  confirmBtn.textContent = 'Excluir';
+
+  cancelBtn.onclick = () => document.getElementById('modal-overlay').classList.add('hidden');
+  confirmBtn.onclick = () => {
+    if (StorageService.resetAllRuinnaLocalData) StorageService.resetAllRuinnaLocalData();
+    else localStorage.clear();
+    location.reload();
+  };
+}
+
+
 function renderSettingsPage() {
   if (typeof StorageService === 'undefined') return;
 
@@ -4693,12 +4751,17 @@ function renderSettingsPage() {
 
   updateAvatarElement(document.getElementById('settings-photo-preview'), profile);
 
+  setText('profile-hub-name', profile?.displayName || plan?.userData?.name || profile?.username || 'Atleta');
+  setText('profile-joined-date', formatProfileJoinDate(profile));
+  setText('profile-app-version', 'versão RUINNA v63');
+  setText('settings-adopted', summary.isAdopted ? 'Adotada' : 'Livre');
+
   setText('settings-plan-name', plan?.planName || 'Sem plano');
   setText('settings-race-name', plan?.raceName || '-');
   setText('settings-plan-weeks', summary.planWeeks || 0);
   setText('settings-plan-workouts', summary.planWorkouts || 0);
   setText('settings-objective-readonly', getPlanObjective(plan, profile));
-  setText('settings-adopted', summary.isAdopted ? 'Adotada' : 'Não adotada');
+  setText('settings-adopted', summary.isAdopted ? 'Adotada' : 'Livre');
 
   setValue('settings-athlete-name', profile?.displayName || plan?.userData?.name || '');
   setText('settings-weight-readonly', weight ? `${weight} kg` : '-');
@@ -4739,6 +4802,7 @@ function saveAthleteProfileSettings() {
   updateHeaderUser();
   renderSettingsPage();
   renderStats();
+  toggleProfileEditPanel(false);
 
   const aiName = document.getElementById('ai-name');
   if (aiName && displayName) aiName.value = displayName;

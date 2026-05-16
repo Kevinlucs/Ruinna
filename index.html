@@ -363,99 +363,122 @@
             </div>
         </main>
 
-        <!-- SETTINGS PAGE -->
-        <main id="page-settings" class="page">
-            <div class="settings-container">
-                <div class="settings-hero">
-                    <div class="settings-hero-copy">
-                        <h2>Perfil</h2>
-                        <p>Atualize foto e nome. O peso fica bloqueado aqui e é atualizado no check-in a cada 4 semanas.</p>
-                    </div>
-                    <button class="settings-logout-mobile" onclick="handleLogout()">Sair</button>
-                </div>
+        <!-- PROFILE HUB PAGE -->
+        <main id="page-settings" class="page profile-hub-page">
+            <div class="profile-hub">
+                <button class="profile-hub-back" onclick="showPage('home')" aria-label="Voltar">
+                    ←
+                </button>
 
-                <div class="settings-grid refined">
-                    <section class="settings-card wide">
-                        <div class="settings-card-header">
-                            <div>
-                                <span>Dados pessoais</span>
-                                <h3>Perfil do atleta</h3>
-                            </div>
-                            <span class="settings-note-pill">perfil</span>
+                <section class="profile-hero-v2">
+                    <div class="profile-avatar-xl" id="settings-photo-preview">A</div>
+                    <h2 id="profile-hub-name">Atleta</h2>
+                    <p id="profile-joined-date">Entrou no RUINNA</p>
+                    <button class="profile-edit-btn" onclick="toggleProfileEditPanel()">Editar perfil</button>
+                </section>
+
+                <section id="profile-edit-panel" class="profile-edit-panel hidden">
+                    <div class="profile-edit-card">
+                        <div class="profile-edit-title">
+                            <span>Dados básicos</span>
+                            <strong>Foto e nome</strong>
                         </div>
 
-                        <div class="settings-profile-editor-layout">
-                            <div class="settings-photo-editor compact">
-                                <div class="settings-photo-preview" id="settings-photo-preview">A</div>
-                                <div>
-                                    <strong>Foto do atleta</strong>
-                                    <p>Salva localmente neste navegador.</p>
-                                    <div class="settings-photo-actions">
-                                        <label class="settings-mini-btn">
-                                            Escolher foto
-                                            <input type="file" id="settings-photo-input" accept="image/*" onchange="handleProfilePhotoUpload(this)" hidden>
-                                        </label>
-                                        <button class="settings-mini-btn ghost" onclick="removeProfilePhoto()">Remover</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="settings-form-grid profile-only">
-                                <label>
-                                    Nome do atleta
-                                    <input type="text" id="settings-athlete-name" class="settings-input" placeholder="Nome">
-                                </label>
-                                <div class="settings-readonly-field locked-weight">
-                                    <span>Peso atual</span>
-                                    <strong id="settings-weight-readonly">-</strong>
-                                    <small>Atualizado no check-in da 4ª semana</small>
-                                </div>
-                                <div class="settings-readonly-field">
-                                    <span>Idade</span>
-                                    <strong id="settings-age-readonly">-</strong>
-                                </div>
-                                <div class="settings-readonly-field">
-                                    <span>Altura</span>
-                                    <strong id="settings-height-readonly">-</strong>
-                                </div>
-                                <div class="settings-readonly-field">
-                                    <span>IMC atual</span>
-                                    <strong id="settings-imc-readonly">-</strong>
-                                </div>
-                                <div class="settings-readonly-field">
-                                    <span>Atualização de peso</span>
-                                    <strong>A cada 4 semanas</strong>
-                                </div>
-                            </div>
+                        <div class="profile-edit-grid">
+                            <label class="profile-photo-picker">
+                                <span>Alterar foto</span>
+                                <input type="file" id="settings-photo-input" accept="image/*" onchange="handleProfilePhotoUpload(this)" hidden>
+                            </label>
+                            <button class="profile-photo-picker ghost" onclick="removeProfilePhoto()">Remover foto</button>
                         </div>
 
-                        <div class="settings-actions end">
+                        <label class="profile-name-field">
+                            Nome do atleta
+                            <input type="text" id="settings-athlete-name" class="settings-input" placeholder="Nome">
+                        </label>
+
+                        <div class="profile-edit-actions">
+                            <button class="btn btn-secondary" onclick="toggleProfileEditPanel(false)">Cancelar</button>
                             <button class="btn btn-primary" onclick="saveAthleteProfileSettings()">Salvar perfil</button>
                         </div>
 
-                        <p class="settings-help">
-                            Nesta tela você altera foto e nome. O peso é travado aqui e só muda no check-in obrigatório a cada 4 semanas.
-                        </p>
-                    </section>
+                        <small id="settings-photo-status" class="settings-photo-status"></small>
+                    </div>
+                </section>
 
-                    <section class="settings-card settings-card-plan wide">
-                        <div class="settings-card-header">
-                            <div>
-                                <span>Planilha atual</span>
-                                <h3>Resumo técnico</h3>
-                            </div>
-                            <button class="settings-mini-btn" onclick="showPage('ai')">IA Coach</button>
-                        </div>
+                <section class="profile-metrics-strip">
+                    <div>
+                        <span>Peso</span>
+                        <strong id="settings-weight-readonly">-</strong>
+                    </div>
+                    <div>
+                        <span>IMC</span>
+                        <strong id="settings-imc-readonly">-</strong>
+                    </div>
+                    <div>
+                        <span>Plano</span>
+                        <strong id="settings-adopted">-</strong>
+                    </div>
+                </section>
 
-                        <div class="settings-plan-grid compact">
-                            <div><span>Nome</span><strong id="settings-plan-name">Sem plano</strong></div>
-                            <div><span>Prova</span><strong id="settings-race-name">-</strong></div>
-                            <div><span>Semanas</span><strong id="settings-plan-weeks">0</strong></div>
-                            <div><span>Treinos totais</span><strong id="settings-plan-workouts">0</strong></div>
-                            <div><span>Objetivo</span><strong id="settings-objective-readonly">Não definido</strong></div>
-                            <div><span>Status</span><strong id="settings-adopted">-</strong></div>
-                        </div>
-                    </section>
+                <section class="profile-list-section">
+                    <h3>Meus itens</h3>
+                    <div class="profile-list-card">
+                        <button class="profile-list-item" onclick="showProfileComingSoon('Aplicativos e dispositivos conectados')">
+                            <span class="profile-item-icon">▦</span>
+                            <span>Aplicativos e dispositivos conectados</span>
+                            <b>›</b>
+                        </button>
+                        <button class="profile-list-item" onclick="showProfileComingSoon('Tênis')">
+                            <span class="profile-item-icon">👟</span>
+                            <span>Tênis</span>
+                            <b>›</b>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="profile-list-section">
+                    <h3>Minhas preferências</h3>
+                    <div class="profile-list-card">
+                        <button class="profile-list-item" onclick="showProfileComingSoon('Geral')">
+                            <span class="profile-item-icon">⚙️</span>
+                            <span>Geral</span>
+                            <b>›</b>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="profile-list-section">
+                    <h3>Conta</h3>
+                    <div class="profile-list-card">
+                        <button class="profile-list-item danger" onclick="confirmDeleteLocalAccount()">
+                            <span class="profile-item-icon">🗑️</span>
+                            <span>Excluir conta</span>
+                            <b>›</b>
+                        </button>
+                    </div>
+                </section>
+
+                <button class="profile-logout-large" onclick="handleLogout()">
+                    <span>↪</span>
+                    Sair
+                </button>
+
+                <section class="profile-legal-links">
+                    <button onclick="showProfileComingSoon('Termos e condições')">Termos e condições</button>
+                    <button onclick="showProfileComingSoon('Política de privacidade')">Política de privacidade</button>
+                    <small id="profile-app-version">versão RUINNA</small>
+                </section>
+
+                <!-- IDs preservados para o motor atual de perfil/plano -->
+                <div class="profile-hidden-bindings" aria-hidden="true">
+                    <span id="settings-plan-name"></span>
+                    <span id="settings-race-name"></span>
+                    <span id="settings-plan-weeks"></span>
+                    <span id="settings-plan-workouts"></span>
+                    <span id="settings-objective-readonly"></span>
+                    <span id="settings-age-readonly"></span>
+                    <span id="settings-height-readonly"></span>
                 </div>
             </div>
         </main>
@@ -735,16 +758,6 @@
                 </svg>
                 <span>Estatísticas</span>
             </button>
-            <div class="nav-item-wrap nav-profile-wrap">
-                <button class="nav-item" data-page="settings" id="nav-settings">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21a8 8 0 0 0-16 0"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <span>Perfil</span>
-                </button>
-            </div>
         </nav>
     </div>
 
