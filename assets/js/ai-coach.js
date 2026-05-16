@@ -289,7 +289,7 @@ IMPORTANTE SOBRE PRESCRIÇÃO DOS TREINOS:
 - Para intervalados: usar repetições fortes em Z4/Z5 com recuperação em Z1.
 - Para tempo/ritmo de prova: usar bloco sustentado em Z3.
 - Para longão: priorizar Z1/Z2, com progressão controlada até Z3 quando indicado.
-- O teste de 3km é obrigatório e o pace médio do teste representa a Z3 do atleta.
+- O teste de 3km é obrigatório; o atleta informa apenas o tempo total, e o pace médio calculado representa a Z3 do atleta. O objetivo textual do atleta deve influenciar volume, progressão, risco, recuperação e especificidade dos treinos.
 
 DADOS DO ATLETA:
 - Nome: ${userData.name || 'Atleta'}

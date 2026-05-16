@@ -7950,3 +7950,209 @@ input[type="date"].ai-input {
 body {
   background: #000000;
 }
+
+/* ===== RUNEVO MOBILE POLISH V67 ===== */
+:root {
+  --accent: #CCFF00;
+  --accent-light: #DFFF4A;
+  --accent-dark: #9ED600;
+  --tertiary: #00D1FF;
+  --bg: #000000;
+  --bg-card: #171A1A;
+  --bg-card-hover: #202525;
+  --text-on-accent: #0A0E1A;
+}
+
+html,
+body,
+.splash-screen,
+.login-screen,
+.app {
+  background: #000000 !important;
+  background-color: #000000 !important;
+}
+
+.splash-screen::before,
+.login-screen::before,
+body::before {
+  display: none !important;
+}
+
+.splash-subtitle {
+  color: var(--text-secondary) !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+}
+
+.login-subtitle {
+  display: none !important;
+}
+
+/* Remove gradientes muito coloridos */
+.btn-primary,
+.btn-generate,
+.login-btn,
+.profile-logout-large,
+.profile-edit-btn,
+.hero-card,
+.ai-trust-card,
+.ai-form-card,
+.countdown-card,
+.stats-card,
+.phase-card,
+.training-zones-card,
+.wd-description-pro,
+.profile-edit-card,
+.shoe-card {
+  background-image: none !important;
+}
+
+.btn-primary,
+.btn-generate,
+.login-btn {
+  background: #CCFF00 !important;
+  color: #0A0E1A !important;
+  border-color: #CCFF00 !important;
+  box-shadow: 0 12px 28px rgba(204, 255, 0, 0.16) !important;
+}
+
+.btn-generate {
+  min-height: 58px;
+  border-radius: 18px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+}
+
+.btn-generate-icon {
+  display: none !important;
+}
+
+.header-title .brand-evo,
+.logo-text .brand-evo,
+.brand-evo {
+  color: #CCFF00 !important;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-tour-help {
+  order: 1;
+}
+
+.header-user-profile {
+  order: 2;
+}
+
+.header-logout-btn {
+  order: 3;
+}
+
+.header-user-profile,
+.header-tour-help {
+  border-color: rgba(204, 255, 0, 0.30) !important;
+  background: rgba(204, 255, 0, 0.07) !important;
+}
+
+.header-user-avatar {
+  background: #CCFF00 !important;
+  color: #0A0E1A !important;
+}
+
+/* Card do Motor RunEvo */
+.ai-trust-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.ai-trust-grid > div:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.ai-trust-grid > div {
+  min-height: 88px;
+}
+
+.ai-hero-title {
+  color: #CCFF00 !important;
+}
+
+.ai-hero-sub {
+  max-width: 340px;
+  margin-inline: auto;
+}
+
+.single-field-row {
+  grid-template-columns: 1fr !important;
+}
+
+.ai-checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ai-checkline input {
+  accent-color: #CCFF00;
+}
+
+.ai-input.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .app-header {
+    padding-inline: 24px !important;
+  }
+
+  .header-title {
+    font-size: 1.45rem !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  .header-user-text {
+    display: none !important;
+  }
+
+  .header-user-profile,
+  .header-tour-help {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    border-radius: 999px !important;
+  }
+
+  .header-user-avatar {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .ai-trust-grid {
+    gap: 10px;
+  }
+
+  .ai-trust-grid > div:nth-child(3) {
+    min-height: 92px;
+  }
+
+  .ai-form-row {
+    gap: 12px;
+  }
+
+  .ai-form-card {
+    border-radius: 22px;
+  }
+}

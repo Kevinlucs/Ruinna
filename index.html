@@ -27,7 +27,7 @@
             <div class="splash-logo">
                 <h1 class="logo-text">Run<span class="brand-evo">Evo</span></h1>
             </div>
-            <p class="splash-subtitle">Planeje e se desafie.</p>
+            <p class="splash-subtitle">evolua sua corrida com inteligência</p>
             <div class="splash-loader">
                 <div class="loader-bar"></div>
             </div>
@@ -40,7 +40,7 @@
             <div class="login-logo">
                 <h1 class="logo-text">Run<span class="brand-evo">Evo</span></h1>
             </div>
-            <p class="login-subtitle">evolua sua corrida com inteligência</p><p class="login-access">Acesso Exclusivo</p>
+            <p class="login-access">Acesso Exclusivo</p>
             
             <form id="login-form" class="login-form">
                 <div class="form-group">
@@ -74,18 +74,18 @@
                         <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
                 </button>
-                <h1 class="header-title">RunEvo</h1>
+                <h1 class="header-title">Run<span class="brand-evo">Evo</span></h1>
             </div>
             <div class="header-right">
+                <button id="header-tour-help" class="header-tour-help" onclick="confirmReplayTour(event)" title="Rever tour do app" aria-label="Rever tour do app">
+                    ?
+                </button>
                 <button id="header-user-profile" class="header-user-profile" onclick="goToProfilePage()" title="Perfil do atleta">
                     <span id="header-user-avatar" class="header-user-avatar">A</span>
                     <span class="header-user-text">
                         <strong id="header-user-name">Atleta</strong>
                         <small id="header-user-role">Perfil</small>
                     </span>
-                </button>
-                <button id="header-tour-help" class="header-tour-help" onclick="confirmReplayTour(event)" title="Rever tour do app" aria-label="Rever tour do app">
-                    ?
                 </button>
                 <button class="header-logout-btn" onclick="handleLogout()" title="Sair">Sair</button>
             </div>
@@ -644,7 +644,7 @@
                 <div class="ai-hero">
                     <div class="ai-hero-icon">🤖</div>
                     <h2 class="ai-hero-title">IA Coach</h2>
-                    <p class="ai-hero-sub">evolua sua corrida com inteligência com Inteligência Artificial</p>
+                    <p class="ai-hero-sub">evolua sua corrida com inteligência</p>
                 </div>
 
                 <div class="ai-trust-card">
@@ -675,11 +675,6 @@
                     <!-- Form Card -->
                     <div class="ai-form-card">
                         <h3 class="ai-form-title">📝 Dados do Corredor</h3>
-
-                        <div class="ai-form-group">
-                            <label class="ai-label">Nome (opcional)</label>
-                            <input type="text" id="ai-name" class="ai-input" placeholder="Seu nome">
-                        </div>
 
                         <div class="ai-form-row">
                             <div class="ai-form-group">
@@ -769,27 +764,31 @@
 
                     <!-- Previous Times -->
                     <div class="ai-form-card">
-                        <h3 class="ai-form-title">⏱️ Tempos Anteriores <span class="ai-optional">(opcional)</span></h3>
-                        <p class="ai-form-hint">Informe seus melhores tempos para a IA calibrar o plano.</p>
+                        <h3 class="ai-form-title">⏱️ Tempos Anteriores</h3>
+                        <p class="ai-form-hint">Informe seus melhores tempos ou marque as distâncias que você ainda não correu. Esses dados ajudam o Motor RunEvo a calibrar a progressão.</p>
 
                         <div class="ai-form-row">
-                            <div class="ai-form-group">
+                            <div class="ai-form-group ai-time-history-group">
                                 <label class="ai-label">5K</label>
                                 <input type="text" id="ai-time5k" class="ai-input time-input" inputmode="numeric" placeholder="25:00" oninput="autoFormatTimeInput(this, false)">
+                                <label class="ai-checkline"><input type="checkbox" id="ai-no-5k" onchange="toggleTimeHistoryInput('5k')"> Ainda não corri 5K</label>
                             </div>
-                            <div class="ai-form-group">
+                            <div class="ai-form-group ai-time-history-group">
                                 <label class="ai-label">10K</label>
                                 <input type="text" id="ai-time10k" class="ai-input time-input" inputmode="numeric" placeholder="52:00" oninput="autoFormatTimeInput(this, false)">
+                                <label class="ai-checkline"><input type="checkbox" id="ai-no-10k" onchange="toggleTimeHistoryInput('10k')"> Ainda não corri 10K</label>
                             </div>
                         </div>
                         <div class="ai-form-row">
-                            <div class="ai-form-group">
+                            <div class="ai-form-group ai-time-history-group">
                                 <label class="ai-label">21K (Meia)</label>
                                 <input type="text" id="ai-time21k" class="ai-input time-input" inputmode="numeric" placeholder="1:55:00" oninput="autoFormatTimeInput(this, true)">
+                                <label class="ai-checkline"><input type="checkbox" id="ai-no-21k" onchange="toggleTimeHistoryInput('21k')"> Ainda não corri 21K</label>
                             </div>
-                            <div class="ai-form-group">
+                            <div class="ai-form-group ai-time-history-group">
                                 <label class="ai-label">42K (Maratona)</label>
                                 <input type="text" id="ai-time42k" class="ai-input time-input" inputmode="numeric" placeholder="4:10:00" oninput="autoFormatTimeInput(this, true)">
+                                <label class="ai-checkline"><input type="checkbox" id="ai-no-42k" onchange="toggleTimeHistoryInput('42k')"> Ainda não corri 42K</label>
                             </div>
                         </div>
                     </div>
@@ -797,31 +796,26 @@
                     <!-- 3km Test -->
                     <div class="ai-form-card">
                         <h3 class="ai-form-title">⚡ Teste de 3km <span class="ai-required">(obrigatório)</span></h3>
-                        <p class="ai-form-hint">Obrigatório para calcular as 5 zonas de treinamento. O pace médio do teste vira a referência da Z3.</p>
+                        <p class="ai-form-hint">Informe apenas o tempo total dos 3km. O Motor RunEvo calcula automaticamente o pace médio e as zonas do atleta por baixo dos panos.</p>
 
-                        <div class="ai-form-row">
+                        <div class="ai-form-row single-field-row">
                             <div class="ai-form-group">
-                                <label class="ai-label">Tempo Total (MM:SS)</label>
+                                <label class="ai-label">Tempo total dos 3km (MM:SS)</label>
                                 <input type="text" id="ai-test3km-time" class="ai-input time-input" inputmode="numeric" placeholder="15:00" oninput="handle3kmTimeInput(this)">
-                            </div>
-                            <div class="ai-form-group">
-                                <label class="ai-label">Pace Médio (MM:SS/km)</label>
-                                <input type="text" id="ai-test3km-pace" class="ai-input time-input" inputmode="numeric" placeholder="05:00" oninput="handle3kmPaceInput(this)">
                             </div>
                         </div>
                     </div>
 
                     <!-- Objective -->
                     <div class="ai-form-card">
-                        <h3 class="ai-form-title">🎯 Objetivo <span class="ai-optional">(opcional)</span></h3>
+                        <h3 class="ai-form-title">🎯 Objetivo <span class="ai-required">(obrigatório)</span></h3>
                         <textarea id="ai-objective" class="ai-input ai-textarea" rows="3"
-                            placeholder="Ex: Quero completar a maratona abaixo de 4 horas, sem parar para andar..."></textarea>
+                            placeholder="Ex: Quero completar a prova com segurança, melhorar meu pace e evitar lesões..."></textarea>
                     </div>
 
                     <!-- Generate Button -->
                     <button id="btn-generate" class="btn-generate" onclick="handleGeneratePlan()">
-                        <span class="btn-generate-icon">🤖</span>
-                        <span class="btn-generate-text">Gerar Planilha com IA</span>
+                        <span class="btn-generate-text">Gerar Planilha</span>
                     </button>
 
                     <!-- Loading State -->

@@ -696,3 +696,21 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 
 ### v66
 - Correção da marca: logo principal e ícones regenerados usando a imagem correta enviada pelo usuário.
+
+
+## RunEvo mobile polish - v67
+
+- Splash corrigido com slogan oficial: “evolua sua corrida com inteligência”.
+- Login removido do slogan, deixando apenas o nome do app.
+- Fundo do app/splash/login forçado em preto para evitar fundo azul no mobile.
+- Gradientes coloridos removidos dos botões e cards principais.
+- Header ajustado com “Evo” em #CCFF00.
+- Ícone de ajuda e avatar tiveram a ordem invertida.
+- Card “Validação do plano” agora ocupa a linha toda no Motor RunEvo.
+- Campo Nome removido do formulário IA Coach.
+- Tempos anteriores deixam de ser opcionais:
+  - usuário informa o tempo ou marca que ainda não correu aquela distância.
+- Teste de 3km agora aceita somente o tempo total.
+- Objetivo agora é obrigatório e reforçado no motor RunEvo.
+- Botão de geração ficou “Gerar Planilha”, sem robô e sem degradê.
+- Cache atualizado para `runevo-v67`.

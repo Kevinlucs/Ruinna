@@ -2293,24 +2293,31 @@ function secondsToTimeStr(totalSeconds) {
 
 window.handle3kmTimeInput = function(input) {
   autoFormatTimeInput(input, false);
-
-  const val = input.value.trim();
-  if (val.match(/^\d{1,2}:\d{2}$/)) {
-    const totalSecs = timeStrToSeconds(val);
-    const paceSecs = totalSecs / 3;
-    document.getElementById('ai-test3km-pace').value = secondsToTimeStr(paceSecs);
-  }
 };
 
-window.handle3kmPaceInput = function(input) {
-  autoFormatTimeInput(input, false);
+function getComputed3kmPaceFromTime(timeValue = '') {
+  const totalSecs = timeStrToSeconds(timeValue);
+  if (!totalSecs) return '';
+  return secondsToTimeStr(totalSecs / 3);
+}
 
-  const val = input.value.trim();
-  if (val.match(/^\d{1,2}:\d{2}$/)) {
-    const paceSecs = timeStrToSeconds(val);
-    const totalSecs = paceSecs * 3;
-    document.getElementById('ai-test3km-time').value = secondsToTimeStr(totalSecs);
-  }
+window.toggleTimeHistoryInput = function(distanceKey) {
+  const map = {
+    '5k': 'ai-time5k',
+    '10k': 'ai-time10k',
+    '21k': 'ai-time21k',
+    '42k': 'ai-time42k'
+  };
+
+  const input = document.getElementById(map[distanceKey]);
+  const check = document.getElementById(`ai-no-${distanceKey}`);
+
+  if (!input || !check) return;
+
+  input.disabled = check.checked;
+  input.classList.toggle('disabled', check.checked);
+
+  if (check.checked) input.value = '';
 };
 
 
@@ -2425,7 +2432,7 @@ function showAIPreflightSummary(data) {
     `Período: ${weeks} semanas`,
     `Treinos: ${data.daysPerWeek}x por semana`,
     `Nível: ${data.level}`,
-    data.test3kmTime ? `Teste 3km: ${data.test3kmTime}` : data.test3kmPace ? `Teste 3km: ${data.test3kmPace}/km` : null,
+    data.test3kmTime ? `Teste 3km: ${data.test3kmTime}` : null,
     data.objective ? `Objetivo informado` : null
   ].filter(Boolean).join(' • ');
 
@@ -2469,13 +2476,8 @@ function normalizeTimeInputToSeconds(value = '') {
 }
 
 function hasValid3kmTest(data) {
-  const paceSeconds = normalizeTimeInputToSeconds(data.test3kmPace);
   const timeSeconds = normalizeTimeInputToSeconds(data.test3kmTime);
-
-  if (paceSeconds && paceSeconds >= 180 && paceSeconds <= 900) return true;
-  if (timeSeconds && timeSeconds >= 540 && timeSeconds <= 2700) return true;
-
-  return false;
+  return Boolean(timeSeconds && timeSeconds >= 540 && timeSeconds <= 2700);
 }
 
 function getActiveTrainingZones() {
@@ -2548,7 +2550,7 @@ function getFormData() {
   }
 
   return {
-    name: document.getElementById('ai-name').value.trim(),
+    name: UserProfileService?.load?.()?.displayName || StorageService.getCurrentUser() || 'Atleta',
     age: document.getElementById('ai-age').value,
     height: heightStr,
     weight: weightStr,
@@ -2560,11 +2562,15 @@ function getFormData() {
     raceDate: document.getElementById('ai-race-date').value,
     daysPerWeek: document.getElementById('ai-days').value,
     time5k: document.getElementById('ai-time5k').value.trim(),
+    no5k: document.getElementById('ai-no-5k')?.checked || false,
     time10k: document.getElementById('ai-time10k').value.trim(),
+    no10k: document.getElementById('ai-no-10k')?.checked || false,
     time21k: document.getElementById('ai-time21k').value.trim(),
+    no21k: document.getElementById('ai-no-21k')?.checked || false,
     time42k: document.getElementById('ai-time42k').value.trim(),
+    no42k: document.getElementById('ai-no-42k')?.checked || false,
     test3kmTime: document.getElementById('ai-test3km-time').value.trim(),
-    test3kmPace: document.getElementById('ai-test3km-pace').value.trim(),
+    test3kmPace: getComputed3kmPaceFromTime(document.getElementById('ai-test3km-time').value.trim()),
     objective: document.getElementById('ai-objective').value.trim(),
   };
 }
@@ -2583,17 +2589,39 @@ function validateFormData(data) {
   if (!data.weight) return { message: 'Informe seu peso.', field: 'ai-weight' };
   if (!Number.isFinite(weight) || weight < 30 || weight > 250) return { message: 'Informe um peso válido em kg.', field: 'ai-weight' };
 
-  if (!data.test3kmTime && !data.test3kmPace) {
+  const previousChecks = [
+    { time: data.time5k, noRun: data.no5k, field: 'ai-time5k', label: '5K' },
+    { time: data.time10k, noRun: data.no10k, field: 'ai-time10k', label: '10K' },
+    { time: data.time21k, noRun: data.no21k, field: 'ai-time21k', label: '21K' },
+    { time: data.time42k, noRun: data.no42k, field: 'ai-time42k', label: '42K' }
+  ];
+
+  const missingHistory = previousChecks.find(item => !item.time && !item.noRun);
+  if (missingHistory) {
     return {
-      message: 'Informe o teste de 3km. Ele é obrigatório para calcular as zonas de treinamento.',
+      message: `Informe seu tempo de ${missingHistory.label} ou marque que ainda não correu essa distância.`,
+      field: missingHistory.field
+    };
+  }
+
+  if (!data.test3kmTime) {
+    return {
+      message: 'Informe o tempo total do teste de 3km. Ele é obrigatório para calcular as zonas de treinamento.',
       field: 'ai-test3km-time'
     };
   }
 
   if (!hasValid3kmTest(data)) {
     return {
-      message: 'Informe um teste de 3km válido. Use o tempo total ou o pace médio.',
-      field: data.test3kmPace ? 'ai-test3km-pace' : 'ai-test3km-time'
+      message: 'Informe um teste de 3km válido usando o tempo total dos 3km.',
+      field: 'ai-test3km-time'
+    };
+  }
+
+  if (!data.objective || data.objective.length < 10) {
+    return {
+      message: 'Descreva seu objetivo. O Motor RunEvo usa esse texto para personalizar melhor a planilha.',
+      field: 'ai-objective'
     };
   }
 
