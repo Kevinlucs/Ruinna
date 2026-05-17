@@ -2131,18 +2131,27 @@ function showToast(message, type = 'info') {
 
 // ===== NAVIGATION =====
 
-function forcePageScrollTop() {
+function forcePageScrollTop(page = currentPage) {
   const reset = () => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
     document.scrollingElement && (document.scrollingElement.scrollTop = 0);
+
+    const activePage = document.querySelector('.page.active');
+    if (activePage) activePage.scrollTop = 0;
+
+    if (page) {
+      const pageEl = document.getElementById(`page-${page}`);
+      if (pageEl) pageEl.scrollTop = 0;
+    }
   };
 
   reset();
   requestAnimationFrame(reset);
-  setTimeout(reset, 80);
-  setTimeout(reset, 220);
+  setTimeout(reset, 50);
+  setTimeout(reset, 160);
+  setTimeout(reset, 320);
 }
 
 
@@ -2184,7 +2193,7 @@ function showPage(page) {
     document.getElementById('page-settings')?.classList.add('compact-mobile-page');
   }
 
-  forcePageScrollTop();
+  forcePageScrollTop(page);
 }
 
 // ===== AI COACH FUNCTIONS =====
@@ -5066,6 +5075,16 @@ function renderShoeSelectHTML(status) {
     </label>
   `;
 }
+
+
+function openSupportPage() {
+  showPage('support');
+}
+
+function openSupportAppPage() {
+  showPage('support-app');
+}
+
 
 function openGeneralSettingsPage() {
   renderGeneralSettingsPage();

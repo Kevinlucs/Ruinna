@@ -768,3 +768,23 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Adicionada nova categoria “Suporte” no Perfil.
 - Dentro de Suporte foi adicionada a opção “Tour pelo app”, reaproveitando o ícone/fluxo do tutorial.
 - Cache atualizado para `runevo-v71`.
+
+
+## RunEvo v72 - fluxo correto de suporte
+
+- Removido o ícone “?” do header/nav superior.
+- “Suporte” agora fica dentro de Perfil > Minhas preferências.
+- Ao tocar em Suporte, abre uma tela própria de suporte.
+- Dentro de Suporte foi criada a categoria “Aplicativo”.
+- Dentro de Aplicativo fica a opção “Tour pelo app”.
+- Cache atualizado para `runevo-v72`.
+
+
+## RunEvo v73 - correção definitiva do espaço preto mobile
+
+- Corrigido o espaço preto persistente nas telas IA Evo e Perfil.
+- No mobile, páginas ativas agora ocupam uma área fixa entre o header e a bottom nav.
+- O scroll do body foi isolado para evitar que páginas abram deslocadas para baixo.
+- O reset de scroll agora também zera o scroll interno da página ativa.
+- Bottom nav ficou um pouco mais compacta.
+- Cache atualizado para `runevo-v73`.
