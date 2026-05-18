@@ -3169,54 +3169,104 @@ function getPlanDistanceLabelFromBlueprint(blueprint = {}, plan = {}) {
   return plan.raceName || ud.raceDistance || ud.distance || 'prova alvo';
 }
 
+
+function compactText(value = '', maxChars = 145) {
+  let text = String(value || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*;\s*/g, '. ')
+    .trim();
+
+  if (!text) return '';
+
+  // Remove repetições de dados crus que já aparecem no resumo da planilha.
+  text = text
+    .replace(/\b(?:idade|peso|altura|imc|teste de 3km|histórico usado|5k|10k|21k|42k)\s*[:=]\s*[^.]+\.?/gi, '')
+    .replace(/\b\d{1,2}\s*anos\b/gi, '')
+    .replace(/\bIMC\s*\d+(?:[.,]\d+)?\b/gi, '')
+    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length > 2) text = sentences.slice(0, 2).join(' ');
+
+  if (text.length > maxChars) {
+    text = text.slice(0, maxChars).replace(/\s+\S*$/, '').trim() + '…';
+  }
+
+  return text;
+}
+
+function firstMeaningfulText(...items) {
+  return items.find(item => String(item || '').trim()) || '';
+}
+
+function normalizeShortLevel(level = '') {
+  const text = String(level || '').toLowerCase();
+  if (text.includes('avanç')) return 'Avançado';
+  if (text.includes('inic')) return 'Iniciante';
+  if (text.includes('inter')) return 'Intermediário';
+  return compactText(level, 80) || 'Intermediário';
+}
+
+
 function explainDetectedLevel(analysis = {}, blueprint = {}, plan = {}) {
   const ud = plan.userData || blueprint.userData || {};
-  const declared = ud.level ? `nível declarado: ${ud.level}` : '';
-  const detected = analysis.detectedLevel || blueprint.profile?.fitnessLevel || ud.level || '-';
-  const test = ud.test3kmTime ? `teste de 3km informado: ${ud.test3kmTime}` : '';
-  const history = [ud.time5k && `5K ${ud.time5k}`, ud.time10k && `10K ${ud.time10k}`, ud.time21k && `21K ${ud.time21k}`, ud.time42k && `42K ${ud.time42k}`].filter(Boolean).join(', ');
-  const historyText = history ? `histórico usado: ${history}` : 'histórico parcial/ausente considerado com cautela';
-  return `${detected}. Leitura baseada em ${humanizeList([declared, test, historyText, ud.imc ? `IMC ${ud.imc}` : ''])}.`;
+  const level = normalizeShortLevel(analysis.detectedLevel || blueprint.profile?.fitnessLevel || ud.level);
+  const reason = compactText(firstMeaningfulText(
+    analysis.detectedLevel,
+    blueprint.profile?.levelReason,
+    'A leitura cruzou nível informado, histórico, teste de 3km e objetivo da prova.'
+  ), 125);
+
+  return reason && reason.toLowerCase() !== level.toLowerCase()
+    ? `${level}. ${reason}`
+    : `${level}. Leitura baseada no perfil, histórico e objetivo.`;
 }
 
 function explainGoalFeasibility(analysis = {}, blueprint = {}, plan = {}) {
-  const ud = plan.userData || blueprint.userData || {};
-  const distance = getPlanDistanceLabelFromBlueprint(blueprint, plan);
-  const feasibility = analysis.goalFeasibility || 'viabilidade calculada pelo Motor Evo';
-  const weeks = plan.totalWeeks || blueprint.totalWeeks || 'o prazo informado';
-  const days = ud.daysPerWeek || plan.daysPerWeek || '-';
-  return `${feasibility}. Para ${distance}, com ${weeks} semanas e ${days} treinos/semana, a planilha só deve ser seguida se o atleta respeitar recuperação, zonas propostas e sinais de fadiga.`;
+  const base = compactText(firstMeaningfulText(
+    analysis.goalFeasibility,
+    analysis.viability,
+    'Viável se o atleta respeitar zonas, recuperação e progressão semanal.'
+  ), 150);
+
+  return base || 'Viável com execução controlada e recuperação respeitada.';
 }
 
 function explainFocus(analysis = {}, blueprint = {}, plan = {}) {
-  const base = analysis.focus || blueprint.profile?.mainLimitation || 'construção aeróbica e consistência';
-  const strategy = blueprint.strategy || {};
-  const peak = strategy.peakWeeklyKm ? `volume pico próximo de ${formatKm(strategy.peakWeeklyKm)}` : '';
-  const longRun = strategy.peakLongRunKm ? `maior longão próximo de ${formatKm(strategy.peakLongRunKm)}` : '';
-  return `${base}. Na prática, o ciclo trabalha base aeróbica, aumento gradual do volume, longões específicos e treinos de qualidade apenas quando fizerem sentido para o objetivo.` + (peak || longRun ? ` Referências do plano: ${humanizeList([peak, longRun])}.` : '');
+  return compactText(firstMeaningfulText(
+    analysis.focus,
+    analysis.mainFocus,
+    blueprint.profile?.mainLimitation,
+    'Construir resistência, consistência e controle de ritmo sem excesso de intensidade.'
+  ), 155);
 }
 
 function explainProgression(calibration = {}, blueprint = {}) {
-  const style = calibration.progressionStyle || 'equilibrada';
+  const style = calibration.progressionStyle || 'conservadora';
   const recovery = calibration.recoveryPriority || 'média';
-  const intensity = calibration.intensityBias || 'moderado';
-  return `${style}. O Motor Evo ajustou progressão com prioridade de recuperação ${recovery} e viés de intensidade ${intensity}, evitando saltos bruscos entre semanas.`;
+  const intensity = calibration.intensityBias || 'moderada';
+
+  return `${style}. Recuperação ${recovery} e intensidade ${intensity}, evitando saltos bruscos.`;
 }
 
 function explainWeakness(analysis = {}, blueprint = {}, plan = {}) {
-  const ud = plan.userData || blueprint.userData || {};
-  const weakness = analysis.mainWeakness || blueprint.profile?.mainLimitation || 'ponto de atenção calculado pelo Motor Evo';
-  const terrain = blueprint.terrainLabel || ud.terrain || '';
-  const imc = ud.imc ? `IMC ${ud.imc}` : '';
-  const days = ud.daysPerWeek ? `${ud.daysPerWeek} dias/semana` : '';
-  return `${weakness}. Isso foi considerado junto com ${humanizeList([imc, days, terrain]) || 'os dados preenchidos'}, para reduzir risco de sobrecarga e manter evolução sustentável.`;
+  return compactText(firstMeaningfulText(
+    analysis.mainWeakness,
+    analysis.attentionPoint,
+    blueprint.profile?.mainLimitation,
+    'Monitorar fadiga, dores e recuperação para não acumular sobrecarga.'
+  ), 155);
 }
 
 function explainValidationIssue(issue = {}) {
-  const label = getValidationCodeLabel(issue.code);
-  const original = issue.message || 'Ajuste técnico aplicado ao plano.';
-  const fixed = issue.fixed ? 'O app corrigiu automaticamente antes de liberar a prévia.' : 'Este item permanece como aviso para o atleta acompanhar durante a execução.';
-  return `${original} ${fixed} Motivo: ${label.toLowerCase()} protege coerência de volume, distribuição semanal, recuperação ou especificidade da prova.`;
+  const original = compactText(issue.message || issue.reason || issue.description || '', 135);
+  if (original) return original;
+
+  return issue.fixed
+    ? 'Ajuste técnico aplicado para manter volume e recuperação coerentes.'
+    : 'Aviso técnico mantido para acompanhamento durante o ciclo.';
 }
 
 function renderCoachAnalysis(plan) {
@@ -3245,7 +3295,7 @@ function renderCoachAnalysis(plan) {
         <span class="coach-risk-pill ${riskClass}">Risco: ${escapeHTML(analysis.riskLevel || blueprint.profile?.riskLevel || 'baixo')}</span>
       </div>
 
-      <p class="coach-summary">${escapeHTML(analysis.coachSummary || 'Estratégia montada com base no perfil informado, prazo, distância alvo, terreno, histórico e teste de 3km.')}</p>
+      <p class="coach-summary">${escapeHTML(compactText(analysis.coachSummary || 'Plano ajustado ao objetivo, nível e prazo informado.', 170))}</p>
 
       <div class="coach-analysis-grid coach-analysis-grid-detailed">
         <div><span>Nível detectado</span><strong>${escapeHTML(explainDetectedLevel(analysis, blueprint, plan))}</strong></div>
@@ -3268,7 +3318,7 @@ function renderCoachAnalysis(plan) {
         <div class="coach-warnings">
           <span>Alertas do plano</span>
           <ul>
-            ${expandedWarnings.map(warning => `<li>${escapeHTML(warning)}</li>`).join('')}
+            ${expandedWarnings.slice(0, 3).map(warning => `<li>${escapeHTML(compactText(warning, 145))}</li>`).join('')}
           </ul>
         </div>
       ` : ''}

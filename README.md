@@ -956,3 +956,13 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
   - 80000 vira 8:00:00
 - Mantido limite máximo de 8:00:00 nos tempos anteriores.
 - Cache atualizado para `runevo-v85`.
+
+
+## RunEvo v86 - estratégia personalizada mais objetiva
+
+- Reduzido o tamanho dos textos da “Estratégia personalizada”.
+- Removida repetição excessiva de idade, IMC, tempos e distância dentro dos cards.
+- Nível detectado, viabilidade, foco, progressão e ponto de atenção ficaram mais curtos.
+- Alertas limitados e compactados para leitura rápida.
+- Prompt da IA Evo ajustado para gerar análises curtas e sem texto de relatório.
+- Cache atualizado para `runevo-v86`.

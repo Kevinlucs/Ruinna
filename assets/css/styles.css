@@ -9270,3 +9270,20 @@ body.profile-fullscreen-mode .page.active,
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
 }
+
+
+/* ===== V86 CONCISE STRATEGY CARD ===== */
+.coach-analysis-grid-detailed strong,
+.coach-strength-grid strong {
+  line-height: 1.45 !important;
+  font-size: 0.92rem !important;
+}
+
+.coach-summary {
+  line-height: 1.55 !important;
+  max-width: 100%;
+}
+
+.coach-analysis-card .coach-alert-box li {
+  margin-bottom: 6px !important;
+}
