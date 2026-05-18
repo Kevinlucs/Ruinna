@@ -2432,31 +2432,28 @@ function digitsToTimeString(digits, allowHours = false) {
   const clean = cleanTimeDigits(digits, allowHours);
   if (!clean) return '';
 
-  let formatted = '';
+  // Ponto crucial:
+  // não inserir ":" com 3 dígitos, porque no mobile isso reposiciona cursor e corrompe a digitação.
+  // Ex.: 473 fica "473"; ao digitar o 0, vira "47:30".
+  if (clean.length <= 3) return clean;
 
   if (allowHours && clean.length > 4) {
     const h = clean.slice(0, -4);
     const m = clean.slice(-4, -2);
     const s = clean.slice(-2);
-    formatted = `${Number(h)}:${m.padStart(2, '0')}:${s.padStart(2, '0')}`;
-    return clampTimeStringToMax(formatted, 8 * 3600);
+    return clampTimeStringToMax(`${Number(h)}:${m.padStart(2, '0')}:${s.padStart(2, '0')}`, 8 * 3600);
   }
 
-  if (clean.length > 2) {
-    const m = clean.slice(0, -2);
-    const s = clean.slice(-2);
-    formatted = `${Number(m)}:${s.padStart(2, '0')}`;
-    return allowHours ? clampTimeStringToMax(formatted, 8 * 3600) : formatted;
-  }
-
-  return clean;
+  const m = clean.slice(0, -2);
+  const s = clean.slice(-2);
+  const formatted = `${Number(m)}:${s.padStart(2, '0')}`;
+  return allowHours ? clampTimeStringToMax(formatted, 8 * 3600) : formatted;
 }
 
 window.autoFormatTimeInput = function(input, allowHours = false) {
   if (!input) return;
 
-  const raw = String(input.value || '');
-  const digits = cleanTimeDigits(raw, allowHours);
+  const digits = cleanTimeDigits(input.value, allowHours);
   input.value = digitsToTimeString(digits, allowHours);
 
   try {

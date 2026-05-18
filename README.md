@@ -942,3 +942,17 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
   - subidas controladas
   - polimento/ativação
 - Cache atualizado para `runevo-v84`.
+
+
+## RunEvo v85 - correção definitiva da máscara de tempo
+
+- Corrigido bug em que digitar 4730 podia virar 51:30 em alguns celulares/navegadores.
+- A máscara não insere mais ":" com apenas 3 dígitos, evitando reposicionamento/corrupção do cursor no mobile.
+- Comportamento validado:
+  - 4730 vira 47:30
+  - 4444 vira 44:44
+  - 1234 vira 12:34
+  - 1220 vira 12:20
+  - 80000 vira 8:00:00
+- Mantido limite máximo de 8:00:00 nos tempos anteriores.
+- Cache atualizado para `runevo-v85`.
