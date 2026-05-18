@@ -898,3 +898,14 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Removidos chips repetidos de volume inicial, pico, longão e recuperação dentro da análise.
 - Ajustado alinhamento dos contadores em “Últimos check-ins” e “Ajustes recentes”.
 - Cache atualizado para `runevo-v82`.
+
+
+## RunEvo v83 - IA Evo mais explicativa e treinos mais variados
+
+- Tempos anteriores voltaram a formatar durante a digitação no padrão do teste de 3km.
+- Quando o atleta digita com “:”, o app preserva o valor e só normaliza ao sair do campo.
+- Estratégia personalizada agora explica melhor nível detectado, viabilidade, foco, progressão e ponto de atenção.
+- Alertas do plano ficaram mais descritivos e práticos.
+- Detalhes da validação explicam motivo e impacto de cada ajuste/aviso.
+- Motor Evo recebeu biblioteca ampliada de treinos: regenerativo, rodagem, longão, fartlek, intervalado, tempo run, progressivo, subida controlada e ativação pré-prova.
+- Cache atualizado para `runevo-v83`.

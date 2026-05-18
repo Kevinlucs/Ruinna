@@ -378,12 +378,13 @@ Gere apenas um BLUEPRINT estratégico pequeno para o motor do app montar a plani
 
 IMPORTANTE SOBRE PRESCRIÇÃO DOS TREINOS:
 - O app monta as semanas localmente, mas sua estratégia deve respeitar linguagem de treinador.
-- Tipos como rodagem leve, regenerativo, fartlek, tempo/ritmo de prova, intervalado/tiros e longão precisam ter objetivo claro.
+- Use uma biblioteca real de treinos de corrida, escolhendo conforme necessidade do atleta: regenerativo, rodagem leve/base, rodagem contínua, longão, longão progressivo, fartlek, intervalado/tiros, tempo run/ritmo sustentado, ritmo de prova segmentado, progressivo, subida controlada e ativação pré-prova.
+- Cada tipo precisa ter função clara: regenerativo recupera; rodagem/base constrói volume aeróbico; longão desenvolve resistência; fartlek melhora adaptação de ritmo sem virar sprint; intervalado trabalha velocidade/economia com recuperação; tempo run/limiar sustenta esforço controlado; progressivo ensina controle; subida fortalece com cautela; ativação mantém soltura antes da prova.
 - Evite comandos vagos como "alternar blocos" sem contexto. O treino final deve orientar aquecimento, bloco principal, recuperação, desaquecimento e intensidade.
-- Para fartlek: usar alternância contínua entre Z3/Z4 e recuperação em Z1/Z2.
-- Para intervalados: usar repetições fortes em Z4/Z5 com recuperação em Z1.
-- Para tempo/ritmo de prova: usar bloco sustentado em Z3.
-- Para longão: priorizar Z1/Z2, com progressão controlada até Z3 quando indicado.
+- Para fartlek: usar alternância contínua entre Z3/Z4 e recuperação em Z1/Z2, sem descanso parado.
+- Para intervalados/tiros: usar repetições fortes em Z4/Z5 com recuperação ativa em Z1; reservar para atletas e objetivos que justifiquem intensidade.
+- Para tempo run/limiar: usar bloco sustentado em Z3, sem transformar em tiro.
+- Para longão: priorizar Z1/Z2, com progressão controlada até Z3 apenas quando indicado e seguro.
 - O teste de 3km é obrigatório; o atleta informa apenas o tempo total, e o pace médio calculado representa a Z3 do atleta.
 - ATENÇÃO: o teste de 3km mede potencial de velocidade, mas NÃO deve dominar a planilha sozinho.
 - O objetivo textual, a distância da prova e o prazo têm prioridade na escolha da intensidade.
@@ -417,13 +418,13 @@ ${JSON.stringify(localPaces)}
 RETORNE APENAS JSON VÁLIDO, pequeno, sem markdown, com esta estrutura exata:
 {
   "athleteAnalysis": {
-    "detectedLevel": "iniciante|intermediário|avançado",
+    "detectedLevel": "iniciante|intermediário|avançado + justificativa curta baseada no teste, histórico, IMC e experiência",
     "riskLevel": "baixo|moderado|alto",
-    "goalFeasibility": "viável|viável com progressão conservadora|agressivo|não recomendado",
-    "mainStrength": "texto curto",
-    "mainWeakness": "texto curto",
-    "focus": "texto curto",
-    "coachSummary": "resumo técnico em até 280 caracteres"
+    "goalFeasibility": "viável|viável com progressão conservadora|agressivo|não recomendado + explicação curta do porquê",
+    "mainStrength": "texto explicando o principal ponto forte identificado nos dados",
+    "mainWeakness": "texto explicando o ponto de atenção real e o impacto no plano",
+    "focus": "texto explicando o que será trabalhado e por quê",
+    "coachSummary": "resumo técnico em até 380 caracteres, mostrando que distância, objetivo, terreno, histórico e teste de 3km foram considerados"
   },
   "strategy": {
     "initialWeeklyKm": 24,
@@ -448,8 +449,8 @@ RETORNE APENAS JSON VÁLIDO, pequeno, sem markdown, com esta estrutura exata:
     { "phase": "Polimento", "startWeek": 23, "endWeek": 24 }
   ],
   "warnings": [
-    "alerta curto e prático",
-    "alerta curto e prático"
+    "alerta claro explicando risco e ação prática para o atleta",
+    "alerta claro sobre intensidade, recuperação, terreno, IMC, histórico ou distância alvo"
   ],
   "engineCalibration": {
     "progressionStyle": "conservadora|equilibrada|agressiva",
@@ -463,7 +464,7 @@ REGRAS:
 - Não inclua workouts.
 - Não inclua nutrição, hidratação ou suplementação.
 - Ajuste volumes ao nível, idade, IMC, teste de 3km, prazo, distância e objetivo textual. Se houver conflito entre teste forte e objetivo conservador, o objetivo/duração da prova vence.
-- A análise deve explicar o raciocínio do plano, sem prometer resultado garantido.
+- A análise deve explicar o raciocínio do plano, sem prometer resultado garantido. O atleta precisa entender por que o plano é viável, quais riscos existem e o que será trabalhado.
 - Se objetivo for agressivo, preserve a prova mas aumente recuperação e reduza progressão.
 - Para ultramaratona, peakLongRunKm normalmente fica entre 55% e 75% da distância alvo, limitado por segurança.
 - Para iniciantes/sobrepeso, use progressão mais conservadora.
@@ -877,42 +878,53 @@ REGRAS:
       return { dayType: 'Longão', title: 'Prova alvo', desc: 'Executar prova com estratégia de ritmo controlada.' };
     }
 
+    const terrain = String(blueprint?.terrain || blueprint?.userData?.terrain || '').toLowerCase();
+    const lowIntensity = blueprint?.engineCalibration?.intensityBias === 'baixo';
+
     if (isRecovery) {
       const recovery = [
         { dayType: 'Recuperação', title: 'Regenerativo leve', desc: 'Recuperação ativa em esforço muito controlado.' },
-        { dayType: 'Base', title: 'Base leve', desc: 'Rodagem confortável para manter frequência sem acumular fadiga.' },
+        { dayType: 'Base', title: 'Rodagem leve', desc: 'Rodagem confortável para manter frequência sem acumular fadiga.' },
         { dayType: 'Longão', title: 'Longão reduzido', desc: 'Longão curto e controlado em semana regenerativa.' }
       ];
       return recovery[Math.min(index, recovery.length - 1)];
     }
 
-    const lowIntensity = blueprint?.engineCalibration?.intensityBias === 'baixo';
+    const qualityByPhase = (() => {
+      if (lowIntensity) {
+        if (phase === 'Pico') return { dayType: 'Qualidade', title: 'Ritmo de prova segmentado', desc: 'Blocos controlados próximos ao ritmo alvo, sem sprint.' };
+        if (phase === 'Resistência') return { dayType: 'Base', title: 'Progressivo controlado', desc: 'Começar leve e terminar em esforço moderado, sem forçar.' };
+        return { dayType: 'Base', title: 'Base controlada', desc: 'Rodagem orientada à resistência, sem forçar ritmo.' };
+      }
 
-    const middleQuality = lowIntensity
-      ? { dayType: 'Base', title: 'Base controlada', desc: 'Rodagem orientada à resistência, sem forçar ritmo.' }
-      : phase === 'Base'
-      ? { dayType: 'Qualidade', title: 'Fartlek técnico', desc: 'Variação de ritmo com blocos controlados e recuperação ativa.' }
-      : phase === 'Resistência'
-        ? { dayType: 'Intervalado', title: 'Tiros controlados', desc: 'Repetições fortes com recuperação planejada.' }
-        : phase === 'Pico'
-          ? { dayType: 'Qualidade', title: 'Ritmo de prova segmentado', desc: 'Blocos no ritmo alvo da prova com controle de esforço.' }
-          : { dayType: 'Base', title: 'Ativação pré-prova', desc: 'Soltura curta com estímulos leves, sem gerar fadiga.' };
+      if (terrain === 'elevado' && phase !== 'Polimento') {
+        return { dayType: 'Qualidade', title: 'Subida controlada', desc: 'Estímulo de força em subida com controle por zona e recuperação ativa.' };
+      }
+
+      if (phase === 'Base') return { dayType: 'Qualidade', title: 'Fartlek técnico', desc: 'Variação de ritmo com blocos controlados e recuperação ativa.' };
+      if (phase === 'Resistência') return { dayType: 'Qualidade', title: 'Tempo run controlado', desc: 'Bloco sustentado em ritmo moderado para melhorar resistência específica.' };
+      if (phase === 'Pico') return { dayType: 'Intervalado', title: 'Intervalado extensivo', desc: 'Repetições fortes, mas controladas, com recuperação planejada.' };
+      return { dayType: 'Base', title: 'Ativação pré-prova', desc: 'Soltura curta com estímulos leves, sem gerar fadiga.' };
+    })();
 
     if (isLastWorkout) {
-      return { dayType: 'Longão', title: phase === 'Pico' ? 'Longão específico' : 'Longão progressivo', desc: 'Longão estruturado com controle de intensidade.' };
+      if (phase === 'Pico') return { dayType: 'Longão', title: 'Longão específico', desc: 'Longão com foco na resistência da prova.' };
+      if (phase === 'Resistência') return { dayType: 'Longão', title: 'Longão progressivo', desc: 'Longão com final controlado, sem virar treino de tiro.' };
+      return { dayType: 'Longão', title: 'Longão confortável', desc: 'Longão estruturado com controle de intensidade.' };
     }
 
     if (daysPerWeek <= 3) {
       return index === 0
         ? { dayType: 'Base', title: 'Rodagem leve', desc: 'Rodagem leve com controle de esforço.' }
-        : middleQuality;
+        : qualityByPhase;
     }
 
     const templates = [
       { dayType: 'Base', title: 'Rodagem leve', desc: 'Rodagem leve com controle de esforço.' },
-      middleQuality,
+      qualityByPhase,
       { dayType: 'Recuperação', title: 'Regenerativo', desc: 'Corrida muito leve para recuperação ativa.' },
-      { dayType: 'Base', title: 'Base contínua', desc: 'Rodagem contínua em zona confortável.' }
+      { dayType: 'Base', title: 'Rodagem contínua', desc: 'Rodagem contínua em zona confortável.' },
+      { dayType: 'Base', title: 'Progressivo leve', desc: 'Começar em Z1 e terminar em Z2 com controle.' }
     ];
 
     return templates[Math.min(index, templates.length - 1)];
@@ -1107,6 +1119,34 @@ REGRAS:
       return buildSimpleZonePrescription([
         `${formatKmValue(warm)} em Z1`,
         `${formatKmValue(main)} em Z2`,
+        `${formatKmValue(cool)} em Z1`
+      ]);
+    }
+
+    if (dayType === 'Qualidade' && title.includes('subida')) {
+      const { warm, main, cool } = splitDistance(totalKm, 1, 1);
+      return buildSimpleZonePrescription([
+        `${formatKmValue(warm)} em Z1`,
+        `${formatKmValue(main)} em Z2 nas subidas, controlando esforço`,
+        `${formatKmValue(cool)} em Z1`
+      ]);
+    }
+
+    if (dayType === 'Qualidade' && (title.includes('tempo') || title.includes('limiar'))) {
+      const { warm, main, cool } = splitDistance(totalKm, 1, 1);
+      return buildSimpleZonePrescription([
+        `${formatKmValue(warm)} em Z1`,
+        `${formatKmValue(main)} em Z3`,
+        `${formatKmValue(cool)} em Z1`
+      ]);
+    }
+
+    if (title.includes('progressivo')) {
+      const { warm, main, cool } = splitDistance(totalKm, 1, 1);
+      return buildSimpleZonePrescription([
+        `${formatKmValue(warm)} em Z1`,
+        `${formatKmValue(Math.max(1, main / 2))} em Z2`,
+        `${formatKmValue(Math.max(1, main / 2))} em Z3 controlado`,
         `${formatKmValue(cool)} em Z1`
       ]);
     }

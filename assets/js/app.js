@@ -2448,8 +2448,18 @@ function digitsToTimeString(digits, allowHours = false) {
 }
 
 window.autoFormatTimeInput = function(input, allowHours = false) {
+  const raw = String(input.value || '');
   const cursorAtEnd = input.selectionStart === input.value.length;
-  input.value = digitsToTimeString(input.value, allowHours);
+
+  // Se o atleta já digitou ':' manualmente, não tenta reescrever o campo durante a digitação.
+  // Isso evita saltos bizarros como 47:30 virar outro valor por causa do cursor.
+  if (raw.includes(':')) {
+    input.value = raw.replace(/[^0-9:]/g, '').slice(0, allowHours ? 8 : 5);
+    if (cursorAtEnd) input.setSelectionRange(input.value.length, input.value.length);
+    return;
+  }
+
+  input.value = digitsToTimeString(raw, allowHours);
   if (cursorAtEnd) input.setSelectionRange(input.value.length, input.value.length);
 };
 
@@ -3160,6 +3170,66 @@ function getRiskLabelClass(riskLevel) {
   return 'low';
 }
 
+
+function humanizeList(parts = []) {
+  return parts.filter(Boolean).join(' • ');
+}
+
+function getPlanDistanceLabelFromBlueprint(blueprint = {}, plan = {}) {
+  const ud = plan.userData || blueprint.userData || {};
+  return plan.raceName || ud.raceDistance || ud.distance || 'prova alvo';
+}
+
+function explainDetectedLevel(analysis = {}, blueprint = {}, plan = {}) {
+  const ud = plan.userData || blueprint.userData || {};
+  const declared = ud.level ? `nível declarado: ${ud.level}` : '';
+  const detected = analysis.detectedLevel || blueprint.profile?.fitnessLevel || ud.level || '-';
+  const test = ud.test3kmTime ? `teste de 3km informado: ${ud.test3kmTime}` : '';
+  const history = [ud.time5k && `5K ${ud.time5k}`, ud.time10k && `10K ${ud.time10k}`, ud.time21k && `21K ${ud.time21k}`, ud.time42k && `42K ${ud.time42k}`].filter(Boolean).join(', ');
+  const historyText = history ? `histórico usado: ${history}` : 'histórico parcial/ausente considerado com cautela';
+  return `${detected}. Leitura baseada em ${humanizeList([declared, test, historyText, ud.imc ? `IMC ${ud.imc}` : ''])}.`;
+}
+
+function explainGoalFeasibility(analysis = {}, blueprint = {}, plan = {}) {
+  const ud = plan.userData || blueprint.userData || {};
+  const distance = getPlanDistanceLabelFromBlueprint(blueprint, plan);
+  const feasibility = analysis.goalFeasibility || 'viabilidade calculada pelo Motor Evo';
+  const weeks = plan.totalWeeks || blueprint.totalWeeks || 'o prazo informado';
+  const days = ud.daysPerWeek || plan.daysPerWeek || '-';
+  return `${feasibility}. Para ${distance}, com ${weeks} semanas e ${days} treinos/semana, a planilha só deve ser seguida se o atleta respeitar recuperação, zonas propostas e sinais de fadiga.`;
+}
+
+function explainFocus(analysis = {}, blueprint = {}, plan = {}) {
+  const base = analysis.focus || blueprint.profile?.mainLimitation || 'construção aeróbica e consistência';
+  const strategy = blueprint.strategy || {};
+  const peak = strategy.peakWeeklyKm ? `volume pico próximo de ${formatKm(strategy.peakWeeklyKm)}` : '';
+  const longRun = strategy.peakLongRunKm ? `maior longão próximo de ${formatKm(strategy.peakLongRunKm)}` : '';
+  return `${base}. Na prática, o ciclo trabalha base aeróbica, aumento gradual do volume, longões específicos e treinos de qualidade apenas quando fizerem sentido para o objetivo.` + (peak || longRun ? ` Referências do plano: ${humanizeList([peak, longRun])}.` : '');
+}
+
+function explainProgression(calibration = {}, blueprint = {}) {
+  const style = calibration.progressionStyle || 'equilibrada';
+  const recovery = calibration.recoveryPriority || 'média';
+  const intensity = calibration.intensityBias || 'moderado';
+  return `${style}. O Motor Evo ajustou progressão com prioridade de recuperação ${recovery} e viés de intensidade ${intensity}, evitando saltos bruscos entre semanas.`;
+}
+
+function explainWeakness(analysis = {}, blueprint = {}, plan = {}) {
+  const ud = plan.userData || blueprint.userData || {};
+  const weakness = analysis.mainWeakness || blueprint.profile?.mainLimitation || 'ponto de atenção calculado pelo Motor Evo';
+  const terrain = blueprint.terrainLabel || ud.terrain || '';
+  const imc = ud.imc ? `IMC ${ud.imc}` : '';
+  const days = ud.daysPerWeek ? `${ud.daysPerWeek} dias/semana` : '';
+  return `${weakness}. Isso foi considerado junto com ${humanizeList([imc, days, terrain]) || 'os dados preenchidos'}, para reduzir risco de sobrecarga e manter evolução sustentável.`;
+}
+
+function explainValidationIssue(issue = {}) {
+  const label = getValidationCodeLabel(issue.code);
+  const original = issue.message || 'Ajuste técnico aplicado ao plano.';
+  const fixed = issue.fixed ? 'O app corrigiu automaticamente antes de liberar a prévia.' : 'Este item permanece como aviso para o atleta acompanhar durante a execução.';
+  return `${original} ${fixed} Motivo: ${label.toLowerCase()} protege coerência de volume, distribuição semanal, recuperação ou especificidade da prova.`;
+}
+
 function renderCoachAnalysis(plan) {
   const blueprint = plan?.blueprint || {};
   const analysis = blueprint.athleteAnalysis || {};
@@ -3170,6 +3240,11 @@ function renderCoachAnalysis(plan) {
   if (!analysis.coachSummary && !analysis.detectedLevel && !strategy.initialWeeklyKm) return '';
 
   const riskClass = getRiskLabelClass(analysis.riskLevel || blueprint.profile?.riskLevel);
+  const expandedWarnings = warnings.length ? warnings : [
+    'Respeite as zonas do treino: correr sempre mais forte que o prescrito aumenta risco de fadiga acumulada.',
+    'Se houver dor persistente, queda brusca de desempenho ou cansaço fora do normal, reduza a carga e priorize recuperação.',
+    'A planilha foi validada tecnicamente, mas a execução depende de sono, rotina, terreno, calor e resposta individual.'
+  ];
 
   return `
     <div class="coach-analysis-card">
@@ -3181,37 +3256,36 @@ function renderCoachAnalysis(plan) {
         <span class="coach-risk-pill ${riskClass}">Risco: ${escapeHTML(analysis.riskLevel || blueprint.profile?.riskLevel || 'baixo')}</span>
       </div>
 
-      <p class="coach-summary">${escapeHTML(analysis.coachSummary || 'Estratégia montada com base no perfil informado, prazo, distância alvo e teste de ritmo.')}</p>
+      <p class="coach-summary">${escapeHTML(analysis.coachSummary || 'Estratégia montada com base no perfil informado, prazo, distância alvo, terreno, histórico e teste de 3km.')}</p>
 
-      <div class="coach-analysis-grid">
-        <div><span>Nível detectado</span><strong>${escapeHTML(analysis.detectedLevel || blueprint.profile?.fitnessLevel || '-')}</strong></div>
-        <div><span>Viabilidade</span><strong>${escapeHTML(analysis.goalFeasibility || '-')}</strong></div>
-        <div><span>Foco principal</span><strong>${escapeHTML(analysis.focus || blueprint.profile?.mainLimitation || '-')}</strong></div>
-        <div><span>Progressão</span><strong>${escapeHTML(calibration.progressionStyle || 'equilibrada')}</strong></div>
+      <div class="coach-analysis-grid coach-analysis-grid-detailed">
+        <div><span>Nível detectado</span><strong>${escapeHTML(explainDetectedLevel(analysis, blueprint, plan))}</strong></div>
+        <div><span>Viabilidade</span><strong>${escapeHTML(explainGoalFeasibility(analysis, blueprint, plan))}</strong></div>
+        <div><span>Foco principal</span><strong>${escapeHTML(explainFocus(analysis, blueprint, plan))}</strong></div>
+        <div><span>Progressão</span><strong>${escapeHTML(explainProgression(calibration, blueprint))}</strong></div>
       </div>
 
-      <div class="coach-strength-grid">
+      <div class="coach-strength-grid coach-analysis-grid-detailed">
         <div>
           <span>Ponto forte</span>
-          <strong>${escapeHTML(analysis.mainStrength || '-')}</strong>
+          <strong>${escapeHTML(analysis.mainStrength || 'Potencial identificado a partir do teste de 3km e/ou histórico informado.')}</strong>
         </div>
         <div>
           <span>Ponto de atenção</span>
-          <strong>${escapeHTML(analysis.mainWeakness || blueprint.profile?.mainLimitation || '-')}</strong>
+          <strong>${escapeHTML(explainWeakness(analysis, blueprint, plan))}</strong>
         </div>
       </div>
-      ${warnings.length ? `
+      ${expandedWarnings.length ? `
         <div class="coach-warnings">
           <span>Alertas do plano</span>
           <ul>
-            ${warnings.map(warning => `<li>${escapeHTML(warning)}</li>`).join('')}
+            ${expandedWarnings.map(warning => `<li>${escapeHTML(warning)}</li>`).join('')}
           </ul>
         </div>
       ` : ''}
     </div>
   `;
 }
-
 
 function renderPlanReview(plan) {
   const validation = plan?.validation || null;
@@ -3271,7 +3345,7 @@ function renderPlanReview(plan) {
                   <strong>${escapeHTML(getValidationIssueWeek(issue))}</strong>
                   <span>${escapeHTML(getValidationCodeLabel(issue.code))}</span>
                 </div>
-                <p>${escapeHTML(issue.message || 'Ajuste técnico aplicado ao plano.')}</p>
+                <p>${escapeHTML(explainValidationIssue(issue))}</p>
               </div>
             `).join('')}
           </div>

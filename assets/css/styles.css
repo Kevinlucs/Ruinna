@@ -9245,3 +9245,21 @@ body.profile-fullscreen-mode .page.active,
 .review-card-header > span {
   min-width: 0 !important;
 }
+
+
+/* ===== V83 IA EVO DETAIL POLISH ===== */
+.coach-analysis-grid-detailed > div strong,
+.coach-strength-grid.coach-analysis-grid-detailed > div strong {
+  line-height: 1.45 !important;
+  font-size: 0.93rem !important;
+  font-weight: 750 !important;
+}
+
+.coach-analysis-grid-detailed > div,
+.coach-strength-grid.coach-analysis-grid-detailed > div {
+  min-height: 96px !important;
+}
+
+.plan-review-issue p {
+  line-height: 1.5 !important;
+}
