@@ -1,4 +1,4 @@
-const CACHE_NAME = 'runevo-v86';
+const CACHE_NAME = 'runevo-v87';
 const ASSETS = [
   './',
   './index.html',

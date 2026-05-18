@@ -966,3 +966,14 @@ O dashboard usa os dados reais do plano ativo, status dos treinos, feedbacks e c
 - Alertas limitados e compactados para leitura rápida.
 - Prompt da IA Evo ajustado para gerar análises curtas e sem texto de relatório.
 - Cache atualizado para `runevo-v86`.
+
+
+## RunEvo v87 - estratégia sem texto cortado
+
+- Removidas reticências automáticas na Estratégia personalizada.
+- Os campos agora terminam com frase completa.
+- Nível detectado não fica repetindo a distância/prova alvo.
+- Viabilidade, foco, progressão e ponto de atenção ficaram mais diretos.
+- Alertas foram encurtados sem deixar sensação de texto cortado.
+- CSS ajustado para não aplicar aparência de truncamento nos cards.
+- Cache atualizado para `runevo-v87`.

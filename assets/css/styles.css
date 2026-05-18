@@ -9287,3 +9287,19 @@ body.profile-fullscreen-mode .page.active,
 .coach-analysis-card .coach-alert-box li {
   margin-bottom: 6px !important;
 }
+
+
+/* ===== V87 STRATEGY WITHOUT ELLIPSIS ===== */
+.coach-analysis-grid-detailed strong,
+.coach-strength-grid strong {
+  display: block;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
+  line-height: 1.42 !important;
+}
+
+.coach-analysis-grid-detailed > div,
+.coach-strength-grid > div {
+  min-height: auto !important;
+}

@@ -3178,21 +3178,32 @@ function compactText(value = '', maxChars = 145) {
 
   if (!text) return '';
 
-  // Remove repetições de dados crus que já aparecem no resumo da planilha.
+  // Remove dados crus que já aparecem no topo da prévia.
   text = text
-    .replace(/\b(?:idade|peso|altura|imc|teste de 3km|histórico usado|5k|10k|21k|42k)\s*[:=]\s*[^.]+\.?/gi, '')
+    .replace(/\b(?:idade|peso|altura|imc|teste de 3km|histórico usado)\s*[:=]\s*[^.]+\.?/gi, '')
     .replace(/\b\d{1,2}\s*anos\b/gi, '')
     .replace(/\bIMC\s*\d+(?:[.,]\d+)?\b/gi, '')
-    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
   const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
-  if (sentences.length > 2) text = sentences.slice(0, 2).join(' ');
+  if (sentences.length) {
+    text = sentences[0].trim();
+  }
 
   if (text.length > maxChars) {
-    text = text.slice(0, maxChars).replace(/\s+\S*$/, '').trim() + '…';
+    const safe = text.slice(0, maxChars).replace(/\s+\S*$/, '').trim();
+    text = safe || text.slice(0, maxChars).trim();
   }
+
+  // Nunca terminar com reticências ou frase parecendo cortada.
+  text = text
+    .replace(/\.{3,}$/g, '')
+    .replace(/…$/g, '')
+    .replace(/[,;:\-–—]+$/g, '')
+    .trim();
+
+  if (text && !/[.!?]$/.test(text)) text += '.';
 
   return text;
 }
@@ -3213,60 +3224,71 @@ function normalizeShortLevel(level = '') {
 function explainDetectedLevel(analysis = {}, blueprint = {}, plan = {}) {
   const ud = plan.userData || blueprint.userData || {};
   const level = normalizeShortLevel(analysis.detectedLevel || blueprint.profile?.fitnessLevel || ud.level);
-  const reason = compactText(firstMeaningfulText(
-    analysis.detectedLevel,
-    blueprint.profile?.levelReason,
-    'A leitura cruzou nível informado, histórico, teste de 3km e objetivo da prova.'
-  ), 125);
+  const hasHistory = Boolean(ud.time5k || ud.time10k || ud.time21k || ud.time42k);
+  const test = ud.test3kmTime ? 'pace de 3km' : 'dados atuais';
+  const historyText = hasHistory ? 'Histórico informado e ' : '';
 
-  return reason && reason.toLowerCase() !== level.toLowerCase()
-    ? `${level}. ${reason}`
-    : `${level}. Leitura baseada no perfil, histórico e objetivo.`;
+  return `${level}. ${historyText}${test} indicam a base atual do atleta.`;
 }
 
 function explainGoalFeasibility(analysis = {}, blueprint = {}, plan = {}) {
-  const base = compactText(firstMeaningfulText(
-    analysis.goalFeasibility,
-    analysis.viability,
-    'Viável se o atleta respeitar zonas, recuperação e progressão semanal.'
-  ), 150);
+  const base = String(analysis.goalFeasibility || analysis.viability || '').toLowerCase();
 
-  return base || 'Viável com execução controlada e recuperação respeitada.';
+  if (base.includes('inviável') || base.includes('alto risco')) {
+    return 'Exige cautela. Siga apenas com recuperação bem controlada.';
+  }
+
+  if (base.includes('conserv')) {
+    return 'Viável com progressão conservadora e recuperação respeitada.';
+  }
+
+  return 'Viável se as zonas e a recuperação forem respeitadas.';
 }
 
 function explainFocus(analysis = {}, blueprint = {}, plan = {}) {
-  return compactText(firstMeaningfulText(
-    analysis.focus,
-    analysis.mainFocus,
-    blueprint.profile?.mainLimitation,
-    'Construir resistência, consistência e controle de ritmo sem excesso de intensidade.'
-  ), 155);
+  const text = String(analysis.focus || analysis.mainFocus || '').toLowerCase();
+
+  if (text.includes('ultra') || text.includes('longa') || text.includes('resist')) {
+    return 'Construir resistência, consistência e segurança nos longões.';
+  }
+
+  if (text.includes('veloc') || text.includes('ritmo')) {
+    return 'Melhorar base aeróbica, ritmo controlado e eficiência.';
+  }
+
+  return 'Desenvolver base aeróbica, volume gradual e controle de esforço.';
 }
 
 function explainProgression(calibration = {}, blueprint = {}) {
   const style = calibration.progressionStyle || 'conservadora';
-  const recovery = calibration.recoveryPriority || 'média';
-  const intensity = calibration.intensityBias || 'moderada';
-
-  return `${style}. Recuperação ${recovery} e intensidade ${intensity}, evitando saltos bruscos.`;
+  return `${style}. A carga aumenta aos poucos, com semanas de recuperação.`;
 }
 
 function explainWeakness(analysis = {}, blueprint = {}, plan = {}) {
-  return compactText(firstMeaningfulText(
-    analysis.mainWeakness,
-    analysis.attentionPoint,
-    blueprint.profile?.mainLimitation,
-    'Monitorar fadiga, dores e recuperação para não acumular sobrecarga.'
-  ), 155);
+  const raw = String(analysis.mainWeakness || analysis.attentionPoint || blueprint.profile?.mainLimitation || '').toLowerCase();
+
+  if (raw.includes('imc') || raw.includes('peso') || raw.includes('articula')) {
+    return 'Controlar impacto, fadiga e sinais de sobrecarga.';
+  }
+
+  if (raw.includes('experiência') || raw.includes('ultra') || raw.includes('distância')) {
+    return 'Ganhar resistência específica sem acelerar a progressão.';
+  }
+
+  if (raw.includes('volume')) {
+    return 'Aumentar volume sem comprometer recuperação.';
+  }
+
+  return 'Monitorar fadiga, dores e resposta ao aumento de carga.';
 }
 
 function explainValidationIssue(issue = {}) {
-  const original = compactText(issue.message || issue.reason || issue.description || '', 135);
-  if (original) return original;
+  const text = compactText(issue.message || issue.reason || issue.description || '', 120);
+  if (text) return text;
 
   return issue.fixed
-    ? 'Ajuste técnico aplicado para manter volume e recuperação coerentes.'
-    : 'Aviso técnico mantido para acompanhamento durante o ciclo.';
+    ? 'Ajuste aplicado para manter a planilha segura.'
+    : 'Aviso técnico para acompanhar durante o ciclo.';
 }
 
 function renderCoachAnalysis(plan) {
@@ -3307,7 +3329,7 @@ function renderCoachAnalysis(plan) {
       <div class="coach-strength-grid coach-analysis-grid-detailed">
         <div>
           <span>Ponto forte</span>
-          <strong>${escapeHTML(analysis.mainStrength || 'Potencial identificado a partir do teste de 3km e/ou histórico informado.')}</strong>
+          <strong>${escapeHTML(compactText(analysis.mainStrength || 'Potencial identificado pelo histórico e teste informado.', 120))}</strong>
         </div>
         <div>
           <span>Ponto de atenção</span>
@@ -3318,7 +3340,7 @@ function renderCoachAnalysis(plan) {
         <div class="coach-warnings">
           <span>Alertas do plano</span>
           <ul>
-            ${expandedWarnings.slice(0, 3).map(warning => `<li>${escapeHTML(compactText(warning, 145))}</li>`).join('')}
+            ${expandedWarnings.slice(0, 3).map(warning => `<li>${escapeHTML(compactText(warning, 115))}</li>`).join('')}
           </ul>
         </div>
       ` : ''}
